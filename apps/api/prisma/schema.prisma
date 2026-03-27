@@ -1,0 +1,234 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// Multi-tenant: All tables include tenant_id
+// RLS policies will be applied via Supabase
+// ============================================
+
+// 조직 (테넌트)
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  bizNumber String?  @map("biz_number")
+  address   String?
+  phone     String?
+  email     String?
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users    User[]
+  clients  Client[]
+  products Product[]
+
+  @@map("organizations")
+}
+
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+// 사용자
+model User {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  name           String
+  role           UserRole     @default(STAFF)
+  supabaseUserId String?      @unique @map("supabase_user_id")
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+// 거래처
+model Client {
+  id             String       @id @default(uuid())
+  name           String
+  type           ClientType
+  bizNumber      String?      @map("biz_number")
+  address        String?
+  phone          String?
+  email          String?
+  manager        String?
+  notes          String?
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  shipments   Shipment[]
+  serviceCase ServiceCase[]
+
+  @@index([organizationId])
+  @@map("clients")
+}
+
+enum ClientType {
+  HOSPITAL
+  CLINIC
+  PHARMACY
+  OTHER
+}
+
+// 제품
+model Product {
+  id             String       @id @default(uuid())
+  name           String
+  category       String?
+  brand          String?
+  model          String?
+  licenseNumber  String?      @map("license_number")
+  unitPrice      Decimal?     @map("unit_price") @db.Decimal(12, 2)
+  description    String?
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  inventory      Inventory?
+  shipmentItems  ShipmentItem[]
+  receivingItems ReceivingItem[]
+
+  @@index([organizationId])
+  @@map("products")
+}
+
+// 재고
+model Inventory {
+  id             String   @id @default(uuid())
+  productId      String   @unique @map("product_id")
+  product        Product  @relation(fields: [productId], references: [id])
+  quantity       Int      @default(0)
+  safetyStock    Int      @default(0) @map("safety_stock")
+  lotNumber      String?  @map("lot_number")
+  organizationId String   @map("organization_id")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@map("inventories")
+}
+
+// 출고
+model Shipment {
+  id             String         @id @default(uuid())
+  clientId       String         @map("client_id")
+  client         Client         @relation(fields: [clientId], references: [id])
+  status         ShipmentStatus @default(REQUESTED)
+  shippedAt      DateTime?      @map("shipped_at")
+  deliveredAt    DateTime?      @map("delivered_at")
+  notes          String?
+  organizationId String         @map("organization_id")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  items ShipmentItem[]
+
+  @@index([organizationId])
+  @@map("shipments")
+}
+
+enum ShipmentStatus {
+  REQUESTED
+  APPROVED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model ShipmentItem {
+  id         String   @id @default(uuid())
+  shipmentId String   @map("shipment_id")
+  shipment   Shipment @relation(fields: [shipmentId], references: [id])
+  productId  String   @map("product_id")
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Int
+  unitPrice  Decimal  @map("unit_price") @db.Decimal(12, 2)
+
+  @@map("shipment_items")
+}
+
+// 입고
+model Receiving {
+  id             String          @id @default(uuid())
+  supplier       String
+  status         ReceivingStatus @default(PENDING)
+  receivedAt     DateTime?       @map("received_at")
+  notes          String?
+  organizationId String          @map("organization_id")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  items ReceivingItem[]
+
+  @@index([organizationId])
+  @@map("receivings")
+}
+
+enum ReceivingStatus {
+  PENDING
+  INSPECTING
+  COMPLETED
+  REJECTED
+}
+
+model ReceivingItem {
+  id          String    @id @default(uuid())
+  receivingId String    @map("receiving_id")
+  receiving   Receiving @relation(fields: [receivingId], references: [id])
+  productId   String    @map("product_id")
+  product     Product   @relation(fields: [productId], references: [id])
+  quantity    Int
+  unitPrice   Decimal   @map("unit_price") @db.Decimal(12, 2)
+
+  @@map("receiving_items")
+}
+
+// A/S 서비스
+model ServiceCase {
+  id             String        @id @default(uuid())
+  clientId       String        @map("client_id")
+  client         Client        @relation(fields: [clientId], references: [id])
+  type           ServiceType
+  status         ServiceStatus @default(OPEN)
+  description    String?
+  assignee       String?
+  resolvedAt     DateTime?     @map("resolved_at")
+  organizationId String        @map("organization_id")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@map("service_cases")
+}
+
+enum ServiceType {
+  INSTALLATION
+  REPAIR
+  MAINTENANCE
+}
+
+enum ServiceStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
