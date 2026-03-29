@@ -1,0 +1,41 @@
+{
+  "projectType": "node-monorepo",
+  "projectName": "medical-ERP",
+  "defaultLeads": ["research-lead", "coding-lead", "qa-lead", "design-lead"],
+  "fileOwnership": {
+    "coding-lead": [
+      "apps/api/src/**",
+      "packages/shared/src/**",
+      "apps/web/src/app/contexts/**",
+      "apps/web/src/app/routes.tsx",
+      "prisma/**"
+    ],
+    "design-lead": [
+      "apps/web/src/app/pages/**",
+      "apps/web/src/app/components/**",
+      "apps/web/src/styles/**",
+      "apps/web/src/imports/**",
+      "**/*.md",
+      "docs/**"
+    ],
+    "qa-lead": [
+      "**/*.spec.ts",
+      "**/*.test.ts",
+      "**/*.spec.tsx",
+      "**/*.test.tsx",
+      "**/e2e/**",
+      "**/__tests__/**"
+    ]
+  },
+  "commands": {
+    "build": "npm run build",
+    "test": "npm run test",
+    "lint": "npm run lint",
+    "typeCheck": "npm run type-check",
+    "dev": "npm run dev",
+    "devWeb": "npm run dev:web",
+    "devApi": "npm run dev:api"
+  },
+  "obsidianPath": "C:\\Users\\samsung\\Documents\\Obsidian Vault\\Project\\medical-ERP-",
+  "createdAt": "2026-03-29T10:42:55Z"
+}
