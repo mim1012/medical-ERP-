@@ -1,5 +1,12 @@
-import { X, Upload, FileText, Calendar } from "lucide-react";
-import { useState } from "react";
+import { X, Upload, FileText } from "lucide-react";
+import { useRef, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../../lib/supabase-client";
+
+interface UploadedFile {
+  name: string;
+  url: string;
+}
 
 interface DocumentFormProps {
   isOpen: boolean;
@@ -9,9 +16,13 @@ interface DocumentFormProps {
 }
 
 export function DocumentForm({ isOpen, onClose, onSubmit, initialData }: DocumentFormProps) {
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>(
+  const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>(
     initialData?.files || []
   );
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -22,14 +33,37 @@ export function DocumentForm({ isOpen, onClose, onSubmit, initialData }: Documen
     onSubmit({ ...data, files: uploadedFiles });
   };
 
-  const handleFileUpload = () => {
-    // Mock file upload
-    const mockFileName = `document_${Date.now()}.pdf`;
-    setUploadedFiles([...uploadedFiles, mockFileName]);
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const organizationId = user?.id ?? 'unknown';
+    const ext = file.name.split('.').pop();
+    const fileName = `${organizationId}/${Date.now()}.${ext}`;
+
+    setUploading(true);
+    setUploadError(null);
+
+    const { error } = await supabase.storage
+      .from('documents')
+      .upload(fileName, file, { upsert: false });
+
+    if (error) {
+      setUploadError(`파일 업로드 실패: ${error.message}`);
+      setUploading(false);
+      return;
+    }
+
+    const { data } = supabase.storage.from('documents').getPublicUrl(fileName);
+    setUploadedFiles(prev => [...prev, { name: file.name, url: data.publicUrl }]);
+    setUploading(false);
+
+    // Reset input so same file can be re-selected if needed
+    e.target.value = '';
   };
 
-  const removeFile = (fileName: string) => {
-    setUploadedFiles(uploadedFiles.filter(f => f !== fileName));
+  const removeFile = (url: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.url !== url));
   };
 
   return (
@@ -208,27 +242,46 @@ export function DocumentForm({ isOpen, onClose, onSubmit, initialData }: Documen
               <h3 className="text-lg font-bold text-[#18212B] mb-4 pb-2 border-b-2 border-[#163A5F]">
                 파일 업로드
               </h3>
-              <div 
-                onClick={handleFileUpload}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <div
+                onClick={() => fileInputRef.current?.click()}
                 className="border-2 border-dashed border-[#D7DEE6] rounded-lg p-8 text-center hover:border-[#5B8DB8] hover:bg-[#F4F7FA] transition-colors cursor-pointer"
               >
                 <Upload className="w-12 h-12 text-[#5B6773] mx-auto mb-3" />
-                <p className="text-sm font-semibold text-[#18212B] mb-1">클릭하여 파일 업로드</p>
-                <p className="text-xs text-[#5B6773]">PDF, DOC, DOCX, XLS, XLSX (최대 50MB)</p>
+                {uploading ? (
+                  <p className="text-sm font-semibold text-[#5B8DB8]">업로드 중...</p>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold text-[#18212B] mb-1">클릭하여 파일 업로드</p>
+                    <p className="text-xs text-[#5B6773]">PDF, DOC, DOCX, XLS, XLSX (최대 50MB)</p>
+                  </>
+                )}
               </div>
+
+              {uploadError && (
+                <p className="mt-2 text-xs text-[#B94A48]">{uploadError}</p>
+              )}
 
               {uploadedFiles.length > 0 && (
                 <div className="mt-4 space-y-2">
                   <p className="text-sm font-semibold text-[#18212B] mb-2">업로드된 파일</p>
-                  {uploadedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between px-4 py-2.5 bg-[#F4F7FA] border border-[#D7DEE6] rounded-md">
+                  {uploadedFiles.map((file) => (
+                    <div key={file.url} className="flex items-center justify-between px-4 py-2.5 bg-[#F4F7FA] border border-[#D7DEE6] rounded-md">
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-[#5B8DB8]" />
-                        <span className="text-sm text-[#18212B]">{file}</span>
+                        <a href={file.url} target="_blank" rel="noreferrer" className="text-sm text-[#18212B] hover:underline">
+                          {file.name}
+                        </a>
                       </div>
                       <button
                         type="button"
-                        onClick={() => removeFile(file)}
+                        onClick={() => removeFile(file.url)}
                         className="text-xs text-[#B94A48] hover:underline"
                       >
                         삭제

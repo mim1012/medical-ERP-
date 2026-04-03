@@ -13,9 +13,9 @@ import { ReceivingService } from './receiving.service'
 import { CreateReceivingDto } from './dto/create-receiving.dto'
 import { UpdateReceivingDto } from './dto/update-receiving.dto'
 import { QueryReceivingDto } from './dto/query-receiving.dto'
+import { CurrentUser } from '../../common/decorators/current-user.decorator'
 
-// TODO: Replace with real auth guard that provides organizationId
-const MOCK_ORG_ID = 'org-placeholder'
+type AuthUser = { id: string; email: string; organizationId: string }
 
 @ApiTags('receiving')
 @Controller('receiving')
@@ -25,36 +25,36 @@ export class ReceivingController {
   @Get()
   @ApiOperation({ summary: '입고 목록 조회' })
   @ApiResponse({ status: 200, description: '입고 목록 반환' })
-  findAll(@Query() query: QueryReceivingDto) {
-    return this.receivingService.findAll(MOCK_ORG_ID, query)
+  findAll(@CurrentUser() user: AuthUser, @Query() query: QueryReceivingDto) {
+    return this.receivingService.findAll(user.organizationId, query)
   }
 
   @Get(':id')
   @ApiOperation({ summary: '입고 상세 조회' })
   @ApiResponse({ status: 200, description: '입고 상세 반환 (items 포함)' })
   @ApiResponse({ status: 404, description: '입고 없음' })
-  findOne(@Param('id') id: string) {
-    return this.receivingService.findOne(MOCK_ORG_ID, id)
+  findOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.receivingService.findOne(user.organizationId, id)
   }
 
   @Post()
   @ApiOperation({ summary: '입고 생성' })
   @ApiResponse({ status: 201, description: '입고 생성 완료' })
-  create(@Body() dto: CreateReceivingDto) {
-    return this.receivingService.create(MOCK_ORG_ID, dto)
+  create(@CurrentUser() user: AuthUser, @Body() dto: CreateReceivingDto) {
+    return this.receivingService.create(user.organizationId, dto)
   }
 
   @Patch(':id')
   @ApiOperation({ summary: '입고 상태 변경' })
   @ApiResponse({ status: 200, description: '입고 업데이트 완료' })
-  update(@Param('id') id: string, @Body() dto: UpdateReceivingDto) {
-    return this.receivingService.update(MOCK_ORG_ID, id, dto)
+  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateReceivingDto) {
+    return this.receivingService.update(user.organizationId, id, dto)
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '입고 삭제' })
   @ApiResponse({ status: 200, description: '입고 삭제 완료' })
-  remove(@Param('id') id: string) {
-    return this.receivingService.remove(MOCK_ORG_ID, id)
+  remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.receivingService.remove(user.organizationId, id)
   }
 }

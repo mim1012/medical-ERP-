@@ -43,56 +43,14 @@ export function Dashboard() {
     setInspectorOpen(true);
   };
   
-  // Mock data for charts
-  const monthlyRevenue = [
-    { month: '9월', revenue: 245000000, id: 'month-sep' },
-    { month: '10월', revenue: 298000000, id: 'month-oct' },
-    { month: '11월', revenue: 312000000, id: 'month-nov' },
-    { month: '12월', revenue: 356000000, id: 'month-dec' },
-    { month: '1월', revenue: 289000000, id: 'month-jan' },
-    { month: '2월', revenue: 423000000, id: 'month-feb' },
-  ];
-  
-  const clientRevenue = [
-    { name: '서울대병원', revenue: 125000000, id: 'client-seoul-national' },
-    { name: '삼성서울병원', revenue: 98000000, id: 'client-samsung' },
-    { name: '세브란스병원', revenue: 87000000, id: 'client-severance' },
-    { name: '아산병원', revenue: 65000000, id: 'client-asan' },
-    { name: '서울성모병원', revenue: 48000000, id: 'client-catholic' },
-  ];
-  
-  const productShare = [
-    { name: '초음파', value: 35, color: '#5B8DB8', id: 'product-ultrasound' },
-    { name: 'MRI 소모품', value: 25, color: '#35556E', id: 'product-mri' },
-    { name: '수술기구', value: 20, color: '#163A5F', id: 'product-surgical' },
-    { name: '검사장비', value: 15, color: '#2E7D5B', id: 'product-test' },
-    { name: '기타', value: 5, color: '#C58A2B', id: 'product-other' },
-  ];
-  
-  // Recent shipments
-  const recentShipments = [
-    { id: 'SH-2024-1234', client: '서울대병원', product: '초음파 프로브 A3', quantity: 2, date: '2026-03-02', status: '출고 완료' },
-    { id: 'SH-2024-1235', client: '삼성서울병원', product: 'MRI 조영제 10ml', quantity: 50, date: '2026-03-02', status: '배송중' },
-    { id: 'SH-2024-1236', client: '세브란스병원', product: '수술용 가위 세트', quantity: 5, date: '2026-03-01', status: '출고 완료' },
-    { id: 'SH-2024-1237', client: '아산병원', product: '혈압계 BP-200', quantity: 10, date: '2026-03-01', status: '출고 완료' },
-    { id: 'SH-2024-1238', client: '강남병원', product: '심전도기 ECG-500', quantity: 3, date: '2026-02-29', status: '출고 완료' },
-  ];
-  
-  // Recent A/S requests
-  const recentService = [
-    { id: 'AS-2024-567', client: '서울대병원', equipment: '초음파기기 US-3000', type: '정기점검', date: '2026-03-02', status: '진행중' },
-    { id: 'AS-2024-568', client: '아산병원', equipment: 'X-Ray XR-100', type: '긴급수리', date: '2026-03-01', status: '완료' },
-    { id: 'AS-2024-569', client: '삼성서울병원', equipment: 'CT 스캐너 CT-500', type: '정기점검', date: '2026-02-28', status: '예정' },
-    { id: 'AS-2024-570', client: '세브란스병원', equipment: 'MRI 장비 MRI-800', type: '부품교체', date: '2026-02-28', status: '진행중' },
-  ];
-  
-  // Recent document uploads
-  const recentDocuments = [
-    { id: 'DOC-2024-891', type: '인증서', client: '서울대병원', title: 'CE 인증서 - 초음파기기', uploadDate: '2026-03-02', expiryDate: '2027-03-02', status: '정상' },
-    { id: 'DOC-2024-892', type: '계약서', client: '삼성서울병원', title: '연간 공급 계약서', uploadDate: '2026-03-01', expiryDate: '2026-12-31', status: '정상' },
-    { id: 'DOC-2024-893', type: '매뉴얼', client: '세브란스병원', title: 'MRI 사용 설명서', uploadDate: '2026-02-28', expiryDate: '-', status: '정상' },
-    { id: 'DOC-2024-894', type: '보증서', client: '아산병원', equipment: 'X-Ray 장비 보증서', uploadDate: '2026-02-27', expiryDate: '2026-04-15', status: '만료임박' },
-  ];
+  const { data: dashboardStats } = useDashboardStats();
+
+  const monthlyRevenue = dashboardStats?.monthlyRevenueChart ?? [];
+  const clientRevenue = dashboardStats?.clientRevenue ?? [];
+  const productShare = dashboardStats?.productShare ?? [];
+  const recentShipments = dashboardStats?.recentShipments ?? [];
+  const recentService = dashboardStats?.recentService ?? [];
+  const recentDocuments: { id: string; type: string; client: string; uploadDate: string; expiryDate: string; status: string }[] = [];
   
   return (
     <div className="min-h-screen bg-[#F4F7FA]">
@@ -297,7 +255,7 @@ export function Dashboard() {
                     dataKey="value"
                   >
                     {productShare.map((entry) => (
-                      <Cell key={entry.id} fill={entry.color} />
+                      <Cell key={entry.name} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip 

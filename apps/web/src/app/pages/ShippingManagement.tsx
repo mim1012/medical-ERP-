@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useShipping, useCreateShipment, useUpdateShipmentStatus } from "../../hooks/use-shipping";
+import { useProducts } from "../../hooks/use-products";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { StatusBadge } from "../components/StatusBadge";
@@ -94,12 +95,22 @@ export function ShippingManagement() {
   const [searchProductTerm, setSearchProductTerm] = useState('');
   const [searchClientTerm, setSearchClientTerm] = useState('');
 
-  const { data: shipments = [], isLoading, error } = useShipping({ search: searchTerm });
+  const { data: shipments = [], isLoading, error } = useShipping({ search: searchProductTerm });
   const createShipment = useCreateShipment();
   const updateShipmentStatus = useUpdateShipmentStatus();
 
-  // Product/lot/serial data stubs - will be replaced by API calls in future
-  const products: any[] = [];
+  const { data: rawProducts = [] } = useProducts({ search: searchProductTerm });
+  const products: Product[] = rawProducts.map((p) => ({
+    id: p.id ?? '',
+    name: p.name,
+    code: p.code,
+    category: p.category,
+    type: p.serialManagement ? 'equipment' : 'consumable',
+    lotEnabled: p.lotManagement,
+    serialEnabled: p.serialManagement,
+    availableQty: p.stockQuantity,
+    status: p.status,
+  }));
   const productClientMapping: Record<string, any[]> = {};
   const lotData: Record<string, any[]> = {};
   const serialData: Record<string, any[]> = {};
