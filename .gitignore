@@ -20,6 +20,9 @@ dist/
 .DS_Store
 Thumbs.db
 
+# Supabase CLI temp files
+apps/api/supabase/.temp/
+
 # Claude Code
 .claude/handoff.md
 .claude/checkpoints/
