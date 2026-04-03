@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -75,12 +75,6 @@ export function Login() {
           </button>
         </form>
 
-        <p className="text-center text-sm text-[#5B6773] mt-6">
-          계정이 없으신가요?{' '}
-          <Link to="/signup" className="text-[#163A5F] font-medium hover:underline">
-            회원가입
-          </Link>
-        </p>
       </div>
     </div>
   )

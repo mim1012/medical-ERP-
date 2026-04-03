@@ -13,17 +13,12 @@ import { TaxInvoiceManagement } from "./pages/TaxInvoiceManagement";
 import { AlertCenter } from "./pages/AlertCenter";
 import { LogHistory } from "./pages/LogHistory";
 import { Login } from "./pages/Login";
-import { Signup } from "./pages/Signup";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 export const router = createBrowserRouter([
   {
     path: "/login",
     Component: Login,
-  },
-  {
-    path: "/signup",
-    Component: Signup,
   },
   {
     path: "/",
