@@ -11,15 +11,15 @@ export class CreateTaxInvoiceDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  clientId: string
+  clientId!: string
 
   @ApiProperty()
   @IsNumber()
-  amount: number
+  amount!: number
 
   @ApiProperty()
   @IsNumber()
-  tax: number
+  tax!: number
 
   @ApiPropertyOptional({ enum: TaxInvoiceStatus })
   @IsOptional()

@@ -49,7 +49,7 @@ export class LogService {
         resource,
         resourceId,
         userId,
-        details,
+        details: details as object,
       },
     })
   }

@@ -13,11 +13,11 @@ export class CreateDocumentDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  title: string
+  title!: string
 
   @ApiProperty({ enum: DocumentType })
   @IsEnum(DocumentType)
-  type: DocumentType
+  type!: DocumentType
 
   @ApiPropertyOptional()
   @IsOptional()

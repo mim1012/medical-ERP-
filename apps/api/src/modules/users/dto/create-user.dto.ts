@@ -10,16 +10,16 @@ export enum UserRole {
 export class CreateUserDto {
   @ApiProperty()
   @IsEmail()
-  email: string
+  email!: string
 
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  name: string
+  name!: string
 
   @ApiProperty({ enum: UserRole })
   @IsEnum(UserRole)
-  role: UserRole
+  role!: UserRole
 
   @ApiPropertyOptional()
   @IsOptional()

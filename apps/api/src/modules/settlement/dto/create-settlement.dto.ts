@@ -24,15 +24,15 @@ export class CreateSettlementDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  clientId: string
+  clientId!: string
 
   @ApiProperty({ enum: SettlementType })
   @IsEnum(SettlementType)
-  type: SettlementType
+  type!: SettlementType
 
   @ApiProperty()
   @IsNumber()
-  amount: number
+  amount!: number
 
   @ApiPropertyOptional({ enum: SettlementStatus })
   @IsOptional()
