@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from "../../../hooks/use-clients";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { ClientForm } from "../components/ClientForm";
@@ -61,201 +62,11 @@ export function ClientManagement() {
   const [detailPanelTitle, setDetailPanelTitle] = useState('');
   const [selectedClientDetail, setSelectedClientDetail] = useState<Client | null>(null);
 
-  // Mock data with enhanced fields
-  const clients: Client[] = [
-    {
-      code: 'CL-2024-001',
-      name: '서울대학교병원',
-      type: '종합병원',
-      representative: '김병원',
-      contactPerson: '이담당',
-      phone: '02-2072-2114',
-      region: '서울',
-      unpaidBalance: 45000000,
-      lastTransaction: '2026-03-01',
-      status: '정상',
-      registrationDate: '2024-01-15',
-      contractStart: '2024-01-15',
-      contractEnd: '2027-01-14',
-      beds: 1800,
-      departments: ['영상의학과', '응급의학과', '외과'],
-      annualRevenue: 1250000000,
-      documentStatus: {
-        businessLicense: true,
-        bankAccount: true,
-        medicalLicense: true,
-        contract: true
-      }
-    },
-    {
-      code: 'CL-2024-002',
-      name: '삼성서울병원',
-      type: '종합병원',
-      representative: '박의사',
-      contactPerson: '최담당',
-      phone: '02-3410-2114',
-      region: '서울',
-      unpaidBalance: 0,
-      lastTransaction: '2026-03-02',
-      status: '정상',
-      registrationDate: '2024-02-20',
-      contractStart: '2024-02-20',
-      contractEnd: '2027-02-19',
-      beds: 1400,
-      departments: ['심장내과', '신경외과', '종양내과'],
-      annualRevenue: 980000000,
-      documentStatus: {
-        businessLicense: true,
-        bankAccount: true,
-        medicalLicense: true,
-        contract: true
-      }
-    },
-    {
-      code: 'CL-2024-003',
-      name: '세브란스병원',
-      type: '종합병원',
-      representative: '정원장',
-      contactPerson: '강담당',
-      phone: '02-2228-5800',
-      region: '서울',
-      unpaidBalance: 23000000,
-      lastTransaction: '2026-02-28',
-      status: '정상',
-      registrationDate: '2024-03-10',
-      contractStart: '2024-03-10',
-      contractEnd: '2026-06-30',
-      beds: 1200,
-      departments: ['정형외과', '내과', '소아과'],
-      annualRevenue: 870000000,
-      documentStatus: {
-        businessLicense: true,
-        bankAccount: true,
-        medicalLicense: true,
-        contract: false
-      }
-    },
-    {
-      code: 'CL-2024-004',
-      name: '아산병원',
-      type: '종합병원',
-      representative: '송대표',
-      contactPerson: '윤담당',
-      phone: '02-3010-3114',
-      region: '서울',
-      unpaidBalance: 0,
-      lastTransaction: '2026-03-01',
-      status: '정상',
-      registrationDate: '2024-04-05',
-      contractStart: '2024-04-05',
-      contractEnd: '2027-04-04',
-      beds: 1600,
-      departments: ['흉부외과', '재활의학과', '마취통증의학과'],
-      annualRevenue: 650000000,
-      documentStatus: {
-        businessLicense: true,
-        bankAccount: true,
-        medicalLicense: true,
-        contract: true
-      }
-    },
-    {
-      code: 'CL-2024-005',
-      name: '강남병원',
-      type: '병원',
-      representative: '조원장',
-      contactPerson: '임담당',
-      phone: '02-1234-5678',
-      region: '서울',
-      unpaidBalance: 12000000,
-      lastTransaction: '2026-02-25',
-      status: '보류',
-      registrationDate: '2024-05-25',
-      contractStart: '2024-05-25',
-      contractEnd: '2026-05-24',
-      beds: 300,
-      departments: ['내과', '외과'],
-      annualRevenue: 120000000,
-      documentStatus: {
-        businessLicense: true,
-        bankAccount: false,
-        medicalLicense: true,
-        contract: true
-      }
-    },
-    {
-      code: 'CL-2024-006',
-      name: '부산대학교병원',
-      type: '종합병원',
-      representative: '한원장',
-      contactPerson: '신담당',
-      phone: '051-240-7000',
-      region: '부산',
-      unpaidBalance: 8500000,
-      lastTransaction: '2026-02-20',
-      status: '정상',
-      registrationDate: '2024-06-10',
-      contractStart: '2024-06-10',
-      contractEnd: '2027-06-09',
-      beds: 900,
-      departments: ['내과', '외과', '산부인과'],
-      annualRevenue: 340000000,
-      documentStatus: {
-        businessLicense: true,
-        bankAccount: true,
-        medicalLicense: true,
-        contract: true
-      }
-    },
-    {
-      code: 'CL-2024-007',
-      name: '경희의료원',
-      type: '의원',
-      representative: '오원장',
-      contactPerson: '유담당',
-      phone: '02-958-8114',
-      region: '서울',
-      unpaidBalance: 0,
-      lastTransaction: '2026-02-28',
-      status: '정상',
-      registrationDate: '2024-07-01',
-      contractStart: '2024-07-01',
-      contractEnd: '2026-12-31',
-      beds: 150,
-      departments: ['한방내과', '침구과'],
-      annualRevenue: 45000000,
-      documentStatus: {
-        businessLicense: true,
-        bankAccount: true,
-        medicalLicense: true,
-        contract: false
-      }
-    },
-    {
-      code: 'CL-2024-008',
-      name: '청담의원',
-      type: '의원',
-      representative: '서원장',
-      contactPerson: '황담당',
-      phone: '02-3456-7890',
-      region: '서울',
-      unpaidBalance: 5200000,
-      lastTransaction: '2026-02-15',
-      status: '중지',
-      registrationDate: '2024-08-15',
-      contractStart: '2024-08-15',
-      contractEnd: '2026-08-14',
-      beds: 80,
-      departments: ['성형외과'],
-      annualRevenue: 28000000,
-      documentStatus: {
-        businessLicense: true,
-        bankAccount: true,
-        medicalLicense: false,
-        contract: true
-      }
-    },
-  ];
+  const { data: clients = [], isLoading, error } = useClients({ search: searchTerm });
+  const createClient = useCreateClient();
+  const updateClient = useUpdateClient();
+  const deleteClient = useDeleteClient();
+
 
   const filteredClients = clients.filter(client => {
     const matchesSearch = 
@@ -267,9 +78,15 @@ export function ClientManagement() {
   });
 
   const handleFormSubmit = (data: any) => {
-    console.log('Form submitted:', data);
-    setIsFormOpen(false);
-    setSelectedClient(null);
+    if (selectedClient?.id) {
+      updateClient.mutate({ id: selectedClient.id, ...data }, {
+        onSuccess: () => { setIsFormOpen(false); setSelectedClient(null); }
+      });
+    } else {
+      createClient.mutate(data, {
+        onSuccess: () => { setIsFormOpen(false); setSelectedClient(null); }
+      });
+    }
   };
 
   const formatCurrency = (amount: number) => {

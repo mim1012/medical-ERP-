@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSettlement } from "../../../hooks/use-settlement";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { SettlementDetailPanel } from "../components/SettlementDetailPanel";
@@ -39,93 +40,8 @@ export function SettlementManagement() {
   const [detailPanelSettlements, setDetailPanelSettlements] = useState<Settlement[] | null>(null);
   const [detailPanelTitle, setDetailPanelTitle] = useState('');
 
-  // Mock data
-  const settlements: Settlement[] = [
-    {
-      settlementNumber: 'STL-2026-001',
-      clientName: '서울대병원',
-      period: '2026년 2월',
-      supplyAmount: 45000000,
-      taxAmount: 4500000,
-      totalAmount: 49500000,
-      receivedAmount: 49500000,
-      unpaidAmount: 0,
-      status: '완납',
-      daysOverdue: 0
-    },
-    {
-      settlementNumber: 'STL-2026-002',
-      clientName: '삼성서울병원',
-      period: '2026년 2월',
-      supplyAmount: 89000000,
-      taxAmount: 8900000,
-      totalAmount: 97900000,
-      receivedAmount: 50000000,
-      unpaidAmount: 47900000,
-      status: '미수',
-      daysOverdue: 5
-    },
-    {
-      settlementNumber: 'STL-2026-003',
-      clientName: '세브란스병원',
-      period: '2026년 2월',
-      supplyAmount: 125000000,
-      taxAmount: 12500000,
-      totalAmount: 137500000,
-      receivedAmount: 0,
-      unpaidAmount: 137500000,
-      status: '미납',
-      daysOverdue: 15
-    },
-    {
-      settlementNumber: 'STL-2026-004',
-      clientName: '아산병원',
-      period: '2026년 1월',
-      supplyAmount: 67500000,
-      taxAmount: 6750000,
-      totalAmount: 74250000,
-      receivedAmount: 74250000,
-      unpaidAmount: 0,
-      status: '완납',
-      daysOverdue: 0
-    },
-    {
-      settlementNumber: 'STL-2026-005',
-      clientName: '서울성모병원',
-      period: '2026년 2월',
-      supplyAmount: 34000000,
-      taxAmount: 3400000,
-      totalAmount: 37400000,
-      receivedAmount: 20000000,
-      unpaidAmount: 17400000,
-      status: '미수',
-      daysOverdue: 3
-    },
-    {
-      settlementNumber: 'STL-2026-006',
-      clientName: '강남세브란스',
-      period: '2026년 1월',
-      supplyAmount: 28500000,
-      taxAmount: 2850000,
-      totalAmount: 31350000,
-      receivedAmount: 31350000,
-      unpaidAmount: 0,
-      status: '완납',
-      daysOverdue: 0
-    },
-    {
-      settlementNumber: 'STL-2025-012',
-      clientName: '분당서울대병원',
-      period: '2025년 12월',
-      supplyAmount: 15600000,
-      taxAmount: 1560000,
-      totalAmount: 17160000,
-      receivedAmount: 0,
-      unpaidAmount: 17160000,
-      status: '연체',
-      daysOverdue: 62
-    },
-  ];
+  const { data: settlements = [], isLoading, error } = useSettlement({ search: searchTerm });
+
 
   const filteredSettlements = settlements.filter(settlement => {
     const matchesSearch = 

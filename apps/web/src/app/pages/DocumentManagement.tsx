@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useDocuments, useCreateDocument } from "../../../hooks/use-document";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { DocumentForm } from "../components/DocumentForm";
@@ -42,119 +43,9 @@ export function DocumentManagement() {
   const [detailPanelDocuments, setDetailPanelDocuments] = useState<Document[] | null>(null);
   const [detailPanelTitle, setDetailPanelTitle] = useState('');
 
-  // Mock data
-  const documents: Document[] = [
-    {
-      documentName: 'MRI-3000 의료기기 인증서',
-      documentType: '인증서',
-      relatedProduct: 'MRI 스캐너',
-      relatedClient: '성메디슨',
-      version: '2.0',
-      uploadDate: '2025-01-15',
-      expiryDate: '2027-01-15',
-      status: '유효',
-      daysUntilExpiry: 683
-    },
-    {
-      documentName: 'CT 스캐너 제조허가증',
-      documentType: '인허가',
-      relatedProduct: 'CT 스캐너',
-      relatedClient: 'GE헬스케어',
-      version: '1.5',
-      uploadDate: '2024-06-20',
-      expiryDate: '2026-06-20',
-      status: '유효',
-      daysUntilExpiry: 475
-    },
-    {
-      documentName: '초음파 진단기 사용 매뉴얼',
-      documentType: '매뉴얼',
-      relatedProduct: '초음파 진단기',
-      relatedClient: '필립스',
-      version: '3.2',
-      uploadDate: '2025-11-05',
-      expiryDate: '-',
-      status: '최신',
-      daysUntilExpiry: 9999
-    },
-    {
-      documentName: 'X-Ray 시스템 기술사양서',
-      documentType: '기술문서',
-      relatedProduct: 'X-Ray 시스템',
-      relatedClient: 'GE헬스케어',
-      version: '1.0',
-      uploadDate: '2025-08-10',
-      expiryDate: '-',
-      status: '최신',
-      daysUntilExpiry: 9999
-    },
-    {
-      documentName: '심전도기 제품 브로슈어',
-      documentType: '브로슈어',
-      relatedProduct: '심전도기',
-      relatedClient: '삼성메디슨',
-      version: '2.1',
-      uploadDate: '2025-09-20',
-      expiryDate: '-',
-      status: '최신',
-      daysUntilExpiry: 9999
-    },
-    {
-      documentName: '공급계약서 - 서울대병원',
-      documentType: '계약서',
-      relatedProduct: '-',
-      relatedClient: '서울대병원',
-      version: '1.0',
-      uploadDate: '2024-01-01',
-      expiryDate: '2026-04-15',
-      status: '만료임박',
-      daysUntilExpiry: 44
-    },
-    {
-      documentName: '세금계산서 발행증명',
-      documentType: '세무서류',
-      relatedProduct: '-',
-      relatedClient: '삼성서울병원',
-      version: '1.0',
-      uploadDate: '2026-02-28',
-      expiryDate: '2027-02-28',
-      status: '유효',
-      daysUntilExpiry: 362
-    },
-    {
-      documentName: 'ISO 13485 인증서',
-      documentType: '인증서',
-      relatedProduct: '-',
-      relatedClient: '-',
-      version: '1.0',
-      uploadDate: '2023-05-10',
-      expiryDate: '2026-03-10',
-      status: '만료임박',
-      daysUntilExpiry: 8
-    },
-    {
-      documentName: 'MRI 소모품 납품계약',
-      documentType: '계약서',
-      relatedProduct: 'MRI 조영제',
-      relatedClient: '바이엘코리아',
-      version: '2.0',
-      uploadDate: '2025-12-01',
-      expiryDate: '2026-12-01',
-      status: '유효',
-      daysUntilExpiry: 274
-    },
-    {
-      documentName: '의료기기 안전관리 지침서',
-      documentType: '기술문서',
-      relatedProduct: '-',
-      relatedClient: '-',
-      version: '4.0',
-      uploadDate: '2026-01-05',
-      expiryDate: '-',
-      status: '최신',
-      daysUntilExpiry: 9999
-    },
-  ];
+  const { data: documents = [], isLoading, error } = useDocuments({ search: searchTerm });
+  const createDocument = useCreateDocument();
+
 
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = 

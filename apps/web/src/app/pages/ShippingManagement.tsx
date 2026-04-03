@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useShipping, useCreateShipment, useUpdateShipmentStatus } from "../../../hooks/use-shipping";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { StatusBadge } from "../components/StatusBadge";
@@ -92,86 +93,20 @@ export function ShippingManagement() {
   const [selectedSerial, setSelectedSerial] = useState('');
   const [searchProductTerm, setSearchProductTerm] = useState('');
   const [searchClientTerm, setSearchClientTerm] = useState('');
-  
+
+  const { data: shipments = [], isLoading, error } = useShipping({ search: searchTerm });
+  const createShipment = useCreateShipment();
+  const updateShipmentStatus = useUpdateShipmentStatus();
+
+  // Product/lot/serial data stubs - will be replaced by API calls in future
+  const products: any[] = [];
+  const productClientMapping: Record<string, any[]> = {};
+  const lotData: Record<string, any[]> = {};
+  const serialData: Record<string, any[]> = {};
+
   // Mobile step state
   const [mobileStep, setMobileStep] = useState<1 | 2 | 3>(1);
 
-  // Mock data - Products
-  const products: Product[] = [
-    { id: 'P001', name: 'CT 스캐너 GE 750HD', code: 'CT-750', category: '영상진단기기', type: 'equipment', lotEnabled: false, serialEnabled: true, availableQty: 3, status: '정상' },
-    { id: 'P002', name: 'MRI 스캐너 Siemens', code: 'MRI-300', category: '영상진단기기', type: 'equipment', lotEnabled: false, serialEnabled: true, availableQty: 2, status: '정상' },
-    { id: 'P003', name: '수술용 마스크 KF94', code: 'MASK-001', category: '보호장비', type: 'consumable', lotEnabled: true, serialEnabled: false, availableQty: 15000, status: '정상' },
-    { id: 'P004', name: '의료용 장갑', code: 'GLOVE-001', category: '보호장비', type: 'consumable', lotEnabled: true, serialEnabled: false, availableQty: 8000, status: '정상' },
-    { id: 'P005', name: '초음파 진단기 Samsung', code: 'US-500', category: '영상진단기기', type: 'equipment', lotEnabled: false, serialEnabled: true, availableQty: 5, status: '정상' },
-    { id: 'P006', name: '주사기 10ml 일회용', code: 'SYR-10', category: '주사기구', type: 'consumable', lotEnabled: true, serialEnabled: false, availableQty: 25000, status: '정상' }
-  ];
-
-  // Mock data - Connected Clients (per product)
-  const productClientMapping: Record<string, Client[]> = {
-    'P001': [
-      { id: 'C001', name: '서울대병원', code: 'CLI-001', contactName: '김담당', phone: '02-1234-5678', defaultPrice: 890000000, recentTrade: true, unpaidAmount: 0, status: '정상' },
-      { id: 'C002', name: '삼성서울병원', code: 'CLI-002', contactName: '이담당', phone: '02-2345-6789', defaultPrice: 880000000, recentTrade: true, unpaidAmount: 15000000, status: '주의' },
-      { id: 'C003', name: '세브란스병원', code: 'CLI-003', contactName: '박담당', phone: '02-3456-7890', defaultPrice: 900000000, recentTrade: false, unpaidAmount: 0, status: '정상' }
-    ],
-    'P002': [
-      { id: 'C001', name: '서울대병원', code: 'CLI-001', contactName: '김담당', phone: '02-1234-5678', defaultPrice: 450000000, recentTrade: true, unpaidAmount: 0, status: '정상' },
-      { id: 'C004', name: '아산병원', code: 'CLI-004', contactName: '최담당', phone: '02-4567-8901', defaultPrice: 460000000, recentTrade: true, unpaidAmount: 8000000, status: '주의' }
-    ],
-    'P003': [
-      { id: 'C001', name: '서울대병원', code: 'CLI-001', contactName: '김담당', phone: '02-1234-5678', defaultPrice: 1500, recentTrade: true, unpaidAmount: 0, status: '정상' },
-      { id: 'C002', name: '삼성서울병원', code: 'CLI-002', contactName: '이담당', phone: '02-2345-6789', defaultPrice: 1450, recentTrade: true, unpaidAmount: 15000000, status: '주의' },
-      { id: 'C005', name: '서울성모병원', code: 'CLI-005', contactName: '정담당', phone: '02-5678-9012', defaultPrice: 1400, recentTrade: false, unpaidAmount: 0, status: '정상' }
-    ],
-    'P004': [
-      { id: 'C001', name: '서울대병원', code: 'CLI-001', contactName: '김담당', phone: '02-1234-5678', defaultPrice: 800, recentTrade: true, unpaidAmount: 0, status: '정상' },
-      { id: 'C003', name: '세브란스병원', code: 'CLI-003', contactName: '박담당', phone: '02-3456-7890', defaultPrice: 850, recentTrade: true, unpaidAmount: 0, status: '정상' }
-    ],
-    'P005': [
-      { id: 'C002', name: '삼성서울병원', code: 'CLI-002', contactName: '이담당', phone: '02-2345-6789', defaultPrice: 125000000, recentTrade: true, unpaidAmount: 15000000, status: '주의' },
-      { id: 'C004', name: '아산병원', code: 'CLI-004', contactName: '최담당', phone: '02-4567-8901', defaultPrice: 130000000, recentTrade: false, unpaidAmount: 8000000, status: '주의' }
-    ],
-    'P006': [
-      { id: 'C001', name: '서울대병원', code: 'CLI-001', contactName: '김담당', phone: '02-1234-5678', defaultPrice: 500, recentTrade: true, unpaidAmount: 0, status: '정상' },
-      { id: 'C005', name: '서울성모병원', code: 'CLI-005', contactName: '정담당', phone: '02-5678-9012', defaultPrice: 480, recentTrade: true, unpaidAmount: 0, status: '정상' }
-    ]
-  };
-
-  // Mock data - Lots
-  const lotData: Record<string, LotInfo[]> = {
-    'P003': [
-      { lotNumber: 'LOT-2026-001', expiryDate: '2027-12-31', available: 8000, warehouse: '서울창고' },
-      { lotNumber: 'LOT-2026-002', expiryDate: '2027-06-30', available: 5000, warehouse: '서울창고' },
-      { lotNumber: 'LOT-2025-050', expiryDate: '2026-04-30', available: 2000, warehouse: '부산창고' }
-    ],
-    'P004': [
-      { lotNumber: 'LOT-2026-010', expiryDate: '2027-03-31', available: 5000, warehouse: '서울창고' },
-      { lotNumber: 'LOT-2026-011', expiryDate: '2027-01-31', available: 3000, warehouse: '서울창고' }
-    ],
-    'P006': [
-      { lotNumber: 'LOT-2026-020', expiryDate: '2028-12-31', available: 15000, warehouse: '서울창고' },
-      { lotNumber: 'LOT-2026-021', expiryDate: '2028-06-30', available: 10000, warehouse: '부산창고' }
-    ]
-  };
-
-  // Mock data - Serials (Equipment only)
-  const serialData: Record<string, SerialInfo[]> = {
-    'P001': [
-      { serialNumber: 'CT750-2024-001', warehouse: '서울창고', status: '출고가능' },
-      { serialNumber: 'CT750-2024-002', warehouse: '서울창고', status: '출고가능' },
-      { serialNumber: 'CT750-2024-003', warehouse: '부산창고', status: '출고가능' }
-    ],
-    'P002': [
-      { serialNumber: 'MRI300-2024-001', warehouse: '서울창고', status: '출고가능' },
-      { serialNumber: 'MRI300-2024-002', warehouse: '서울창고', status: '출고가능' }
-    ],
-    'P005': [
-      { serialNumber: 'US500-2024-001', warehouse: '서울창고', status: '출고가능' },
-      { serialNumber: 'US500-2024-002', warehouse: '서울창고', status: '출고가능' },
-      { serialNumber: 'US500-2024-003', warehouse: '부산창���', status: '출고가능' },
-      { serialNumber: 'US500-2024-004', warehouse: '서울창고', status: '출고가능' },
-      { serialNumber: 'US500-2024-005', warehouse: '서울창고', status: '출고가능' }
-    ]
-  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('ko-KR').format(amount);

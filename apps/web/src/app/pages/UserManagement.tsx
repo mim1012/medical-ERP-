@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from "../../../hooks/use-users";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { UserForm } from "../components/UserForm";
@@ -34,92 +35,13 @@ export function UserManagement() {
   const [roleFilter, setRoleFilter] = useState('전체');
   const [statusFilter, setStatusFilter] = useState('전체');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const { data: users = [], isLoading, error } = useUsers({ search: searchTerm });
+  const createUser = useCreateUser();
+  const updateUser = useUpdateUser();
+  const deleteUser = useDeleteUser();
   const [activeTab, setActiveTab] = useState<'users' | 'permissions'>('users');
 
-  // Mock data
-  const users: User[] = [
-    {
-      name: '김대표',
-      department: '경영지원',
-      position: '대표이사',
-      email: 'ceo@company.com',
-      phone: '010-1234-5678',
-      roleGroup: '대표',
-      status: '활성'
-    },
-    {
-      name: '이영업',
-      department: '영업팀',
-      position: '부장',
-      email: 'sales.lee@company.com',
-      phone: '010-2345-6789',
-      roleGroup: '영업팀',
-      status: '활성'
-    },
-    {
-      name: '박운영',
-      department: '운영팀',
-      position: '차장',
-      email: 'ops.park@company.com',
-      phone: '010-3456-7890',
-      roleGroup: '운영팀',
-      status: '활성'
-    },
-    {
-      name: '최물류',
-      department: '물류팀',
-      position: '과장',
-      email: 'logistics.choi@company.com',
-      phone: '010-4567-8901',
-      roleGroup: '물류팀',
-      status: '활성'
-    },
-    {
-      name: '정서비스',
-      department: 'A/S팀',
-      position: '대리',
-      email: 'service.jung@company.com',
-      phone: '010-5678-9012',
-      roleGroup: 'A/S팀',
-      status: '활성'
-    },
-    {
-      name: '강정산',
-      department: '정산팀',
-      position: '과장',
-      email: 'finance.kang@company.com',
-      phone: '010-6789-0123',
-      roleGroup: '정산팀',
-      status: '활성'
-    },
-    {
-      name: '윤영업',
-      department: '영업팀',
-      position: '사원',
-      email: 'sales.yoon@company.com',
-      phone: '010-7890-1234',
-      roleGroup: '영업팀',
-      status: '활성'
-    },
-    {
-      name: '임물류',
-      department: '물류팀',
-      position: '사원',
-      email: 'logistics.lim@company.com',
-      phone: '010-8901-2345',
-      roleGroup: '물류팀',
-      status: '휴면'
-    },
-    {
-      name: '한외부',
-      department: '외부감사',
-      position: '감사',
-      email: 'audit.han@external.com',
-      phone: '010-9012-3456',
-      roleGroup: '읽기전용',
-      status: '활성'
-    },
-  ];
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = 

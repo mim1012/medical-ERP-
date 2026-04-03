@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTaxInvoices, useCreateTaxInvoice, useIssueTaxInvoice } from "../../../hooks/use-tax-invoice";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { TaxInvoiceForm } from "../components/TaxInvoiceForm";
@@ -43,123 +44,12 @@ export function TaxInvoiceManagement() {
   const [monthFilter, setMonthFilter] = useState('전체');
   const [statusFilter, setStatusFilter] = useState('전체');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const { data: invoices = [], isLoading, error } = useTaxInvoices({ search: searchTerm });
+  const createTaxInvoice = useCreateTaxInvoice();
+  const issueTaxInvoice = useIssueTaxInvoice();
   const [inspectorType, setInspectorType] = useState<'monthly-revenue' | 'tax-scheduled' | 'tax-completed' | 'tax-unissued' | 'tax-revision' | 'tax-error' | null>(null);
 
-  // Mock data
-  const invoices: TaxInvoice[] = [
-    {
-      invoiceNumber: 'INV-2026-0315',
-      clientName: '서울대병원',
-      businessNumber: '123-45-67890',
-      issueMonth: '2026년 2월',
-      shippingNumber: 'SHP-2026-0245',
-      supplyAmount: 45000000,
-      taxAmount: 4500000,
-      totalAmount: 49500000,
-      issueDate: '2026-03-01',
-      email: 'accounting@snuh.org',
-      status: '발행완료',
-      manager: '강정산'
-    },
-    {
-      invoiceNumber: 'INV-2026-0314',
-      clientName: '삼성서울병원',
-      businessNumber: '234-56-78901',
-      issueMonth: '2026년 2월',
-      shippingNumber: 'SHP-2026-0238',
-      supplyAmount: 89000000,
-      taxAmount: 8900000,
-      totalAmount: 97900000,
-      issueDate: '2026-03-01',
-      email: 'tax@smc.or.kr',
-      status: '발행완료',
-      manager: '강정산'
-    },
-    {
-      invoiceNumber: 'INV-2026-0313',
-      clientName: '세브란스병원',
-      businessNumber: '345-67-89012',
-      issueMonth: '2026년 2월',
-      shippingNumber: 'SHP-2026-0229',
-      supplyAmount: 125000000,
-      taxAmount: 12500000,
-      totalAmount: 137500000,
-      issueDate: '',
-      email: 'finance@yuhs.ac',
-      status: '발행대기',
-      manager: '강정산'
-    },
-    {
-      invoiceNumber: 'INV-2026-0312',
-      clientName: '아산병원',
-      businessNumber: '456-78-90123',
-      issueMonth: '2026년 1월',
-      shippingNumber: 'SHP-2026-0195',
-      supplyAmount: 67500000,
-      taxAmount: 6750000,
-      totalAmount: 74250000,
-      issueDate: '2026-02-01',
-      email: 'tax@amc.seoul.kr',
-      status: '발행완료',
-      manager: '김경리'
-    },
-    {
-      invoiceNumber: 'INV-2026-0311',
-      clientName: '서울성모병원',
-      businessNumber: '567-89-01234',
-      issueMonth: '2026년 2월',
-      shippingNumber: 'SHP-2026-0233',
-      supplyAmount: 34000000,
-      taxAmount: 3400000,
-      totalAmount: 37400000,
-      issueDate: '',
-      email: 'acc@cmcseoul.or.kr',
-      status: '미발행',
-      manager: '이회계'
-    },
-    {
-      invoiceNumber: 'INV-2026-0310',
-      clientName: '강남세브란스',
-      businessNumber: '678-90-12345',
-      issueMonth: '2026년 2월',
-      shippingNumber: 'SHP-2026-0241',
-      supplyAmount: 28500000,
-      taxAmount: 2850000,
-      totalAmount: 31350000,
-      issueDate: '',
-      email: 'finance@gs.yuhs.ac',
-      status: '발행대기',
-      manager: '강정산'
-    },
-    {
-      invoiceNumber: 'INV-2026-0309',
-      clientName: '분당서울대병원',
-      businessNumber: '789-01-23456',
-      issueMonth: '2026년 2월',
-      shippingNumber: 'SHP-2026-0236',
-      supplyAmount: 15600000,
-      taxAmount: 1560000,
-      totalAmount: 17160000,
-      issueDate: '2026-03-01',
-      email: 'tax@snubh.org',
-      status: '수정발행',
-      manager: '김경리'
-    },
-    {
-      invoiceNumber: 'INV-2026-0308',
-      clientName: '고려대안암병원',
-      businessNumber: '890-12-34567',
-      issueMonth: '2026년 2월',
-      shippingNumber: 'SHP-2026-0242',
-      supplyAmount: 42300000,
-      taxAmount: 4230000,
-      totalAmount: 46530000,
-      issueDate: '',
-      email: 'accounting@kumc.or.kr',
-      status: '발행오류',
-      manager: '이회계'
-    },
-  ];
 
   const filteredInvoices = invoices.filter(inv => {
     const matchesSearch = 

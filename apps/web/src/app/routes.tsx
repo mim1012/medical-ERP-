@@ -12,58 +12,64 @@ import { UserManagement } from "./pages/UserManagement";
 import { TaxInvoiceManagement } from "./pages/TaxInvoiceManagement";
 import { AlertCenter } from "./pages/AlertCenter";
 import { LogHistory } from "./pages/LogHistory";
+import { Login } from "./pages/Login";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 export const router = createBrowserRouter([
   {
+    path: "/login",
+    Component: Login,
+  },
+  {
     path: "/",
-    Component: Dashboard,
+    element: <ProtectedRoute><Dashboard /></ProtectedRoute>,
   },
   {
     path: "/clients",
-    Component: ClientManagement,
+    element: <ProtectedRoute><ClientManagement /></ProtectedRoute>,
   },
   {
     path: "/products",
-    Component: ProductManagement,
+    element: <ProtectedRoute><ProductManagement /></ProtectedRoute>,
   },
   {
     path: "/inventory",
-    Component: InventoryManagement,
+    element: <ProtectedRoute><InventoryManagement /></ProtectedRoute>,
   },
   {
     path: "/receiving",
-    Component: ReceivingManagement,
+    element: <ProtectedRoute><ReceivingManagement /></ProtectedRoute>,
   },
   {
     path: "/shipping",
-    Component: ShippingManagement,
+    element: <ProtectedRoute><ShippingManagement /></ProtectedRoute>,
   },
   {
     path: "/service",
-    Component: ServiceManagement,
+    element: <ProtectedRoute><ServiceManagement /></ProtectedRoute>,
   },
   {
     path: "/documents",
-    Component: DocumentManagement,
+    element: <ProtectedRoute><DocumentManagement /></ProtectedRoute>,
   },
   {
     path: "/settlement",
-    Component: SettlementManagement,
+    element: <ProtectedRoute><SettlementManagement /></ProtectedRoute>,
   },
   {
     path: "/users",
-    Component: UserManagement,
+    element: <ProtectedRoute><UserManagement /></ProtectedRoute>,
   },
   {
     path: "/invoice",
-    Component: TaxInvoiceManagement,
+    element: <ProtectedRoute><TaxInvoiceManagement /></ProtectedRoute>,
   },
   {
     path: "/alerts",
-    Component: AlertCenter,
+    element: <ProtectedRoute><AlertCenter /></ProtectedRoute>,
   },
   {
     path: "/logs",
-    Component: LogHistory,
+    element: <ProtectedRoute><LogHistory /></ProtectedRoute>,
   },
 ]);

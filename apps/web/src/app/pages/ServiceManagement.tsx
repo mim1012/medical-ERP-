@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useService, useCreateService, useUpdateService } from "../../../hooks/use-service";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { InstallationForm } from "../components/InstallationForm";
@@ -55,127 +56,20 @@ export function ServiceManagement() {
   const [detailPanelCases, setDetailPanelCases] = useState<ServiceCase[] | null>(null);
   const [detailPanelTitle, setDetailPanelTitle] = useState('');
 
-  // Mock data - Installed Devices
-  const installedDevices: InstalledDevice[] = [
-    {
-      equipmentName: 'MRI 스캐너',
-      modelName: 'MRI-3000',
-      serialNumber: 'SN-MRI-001234',
-      hospitalName: '서울대병원',
-      installationDate: '2024-01-15',
-      warrantyExpiry: '2027-01-15',
-      engineer: '김기사',
-      status: '정상'
-    },
-    {
-      equipmentName: 'CT 스캐너',
-      modelName: 'CT-5000',
-      serialNumber: 'SN-CT-005678',
-      hospitalName: '삼성서울병원',
-      installationDate: '2024-06-20',
-      warrantyExpiry: '2026-06-20',
-      engineer: '이기사',
-      status: '정상'
-    },
-    {
-      equipmentName: '초음파 진단기',
-      modelName: 'US-2500',
-      serialNumber: 'SN-US-009012',
-      hospitalName: '세브란스병원',
-      installationDate: '2023-03-10',
-      warrantyExpiry: '2025-03-10',
-      engineer: '박기사',
-      status: '점검필요'
-    },
-    {
-      equipmentName: 'X-Ray 시스템',
-      modelName: 'XR-4000',
-      serialNumber: 'SN-XR-003456',
-      hospitalName: '아산병원',
-      installationDate: '2025-11-05',
-      warrantyExpiry: '2027-11-05',
-      engineer: '최기사',
-      status: '정상'
-    },
-    {
-      equipmentName: '심전도기',
-      modelName: 'ECG-1000',
-      serialNumber: 'SN-ECG-007890',
-      hospitalName: '서울성모병원',
-      installationDate: '2022-08-22',
-      warrantyExpiry: '2024-08-22',
-      engineer: '김기사',
-      status: '수리중'
-    },
-  ];
+  const { data: serviceCases = [], isLoading, error } = useService({ search: searchTerm });
+  const createService = useCreateService();
+  const updateService = useUpdateService();
 
-  // Mock data - Service Cases
-  const serviceCases: ServiceCase[] = [
-    {
-      caseNumber: 'AS-2026-001',
-      caseDate: '2026-03-02',
-      hospitalName: '서울대병원',
-      equipmentName: 'MRI 스캐너',
-      serialNumber: 'SN-MRI-001234',
-      symptoms: '영상 품질 저하, 노이즈 발생',
-      priority: '높음',
-      status: '진행중',
-      engineer: '김기사'
-    },
-    {
-      caseNumber: 'AS-2026-002',
-      caseDate: '2026-03-01',
-      hospitalName: '삼성서울병원',
-      equipmentName: 'CT 스캐너',
-      serialNumber: 'SN-CT-005678',
-      symptoms: '스캔 속도 느림',
-      priority: '보통',
-      status: '접수',
-      engineer: '이기사'
-    },
-    {
-      caseNumber: 'AS-2026-003',
-      caseDate: '2026-02-28',
-      hospitalName: '세브란스병원',
-      equipmentName: '초음파 진단기',
-      serialNumber: 'SN-US-009012',
-      symptoms: '화면 깜빡임 현상',
-      priority: '긴급',
-      status: '배정',
-      engineer: '박기사'
-    },
-    {
-      caseNumber: 'AS-2026-004',
-      caseDate: '2026-02-27',
-      hospitalName: '아산병원',
-      equipmentName: 'X-Ray 시스템',
-      serialNumber: 'SN-XR-003456',
-      symptoms: '정기 점검 요청',
-      priority: '낮음',
-      status: '완료',
-      engineer: '최기사'
-    },
-    {
-      caseNumber: 'AS-2026-005',
-      caseDate: '2026-02-26',
-      hospitalName: '서울성모병원',
-      equipmentName: '심전도기',
-      serialNumber: 'SN-ECG-007890',
-      symptoms: '전원 부팅 실패',
-      priority: '긴급',
-      status: '진행중',
-      engineer: '김기사'
-    },
-  ];
 
+  const installedDevices: any[] = [];
   const filteredDevices = installedDevices.filter(device => {
-    const matchesSearch = 
+    const matchesSearch =
       device.equipmentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       device.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       device.hospitalName.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === '전체' || device.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 

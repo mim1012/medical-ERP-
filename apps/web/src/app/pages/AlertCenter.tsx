@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAlerts, useMarkAlertRead, useMarkAllAlertsRead, useDeleteAlert } from "../../../hooks/use-alert";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { AlertDetailPanel } from "../components/AlertDetailPanel";
@@ -51,6 +52,11 @@ export function AlertCenter() {
   const [priorityFilter, setPriorityFilter] = useState('전체');
   const [statusFilter, setStatusFilter] = useState('전체');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const { data: alerts = [], isLoading, error } = useAlerts();
+  const markRead = useMarkAlertRead();
+  const markAllRead = useMarkAllAlertsRead();
+  const deleteAlert = useDeleteAlert();
   const [inspectorType, setInspectorType] = useState<
     'monthly-revenue' | 'alert-expiry-warning' | 'alert-stock-shortage' | 
     'alert-serial-unregistered' | 'alert-lot-tracking' | 'alert-document-expiry' | 
@@ -58,143 +64,6 @@ export function AlertCenter() {
     'alert-as-delay' | 'alert-install-schedule' | null
   >(null);
 
-  // Mock data
-  const alerts: Alert[] = [
-    {
-      alertNumber: 'ALT-2026-0315',
-      type: '유효기간 임박',
-      title: 'MRI 조영제 LOT-2024-0315 유효기간 7일 전',
-      target: 'MRI 조영제',
-      relatedNumber: 'LOT-2024-0315',
-      issueDate: '2026-03-02',
-      priority: '긴급',
-      status: '미확인',
-      manager: '',
-      deadline: '2026-03-09',
-      relatedProduct: 'MRI 조영제'
-    },
-    {
-      alertNumber: 'ALT-2026-0314',
-      type: '재고 부족',
-      title: '초음파 젤 재고 안전재고 이하',
-      target: '초음파 젤',
-      relatedNumber: 'PRD-2026-0089',
-      issueDate: '2026-03-02',
-      priority: '높음',
-      status: '확인완료',
-      manager: '박운영',
-      deadline: '2026-03-05',
-      relatedProduct: '초음파 젤'
-    },
-    {
-      alertNumber: 'ALT-2026-0313',
-      type: '시리얼 미등록',
-      title: 'CT 스캐너 SHP-2026-0245 시리얼번호 미등록',
-      target: 'CT 스캐너',
-      relatedNumber: 'SHP-2026-0245',
-      issueDate: '2026-03-01',
-      priority: '높음',
-      status: '처리중',
-      manager: '최물류',
-      deadline: '2026-03-04',
-      relatedClient: '서울대병원',
-      relatedProduct: 'CT 스캐너'
-    },
-    {
-      alertNumber: 'ALT-2026-0312',
-      type: '문서 만료 예정',
-      title: 'ISO 13485 인증서 8일 후 만료',
-      target: 'ISO 13485 증서',
-      relatedNumber: 'DOC-2023-0512',
-      issueDate: '2026-03-01',
-      priority: '긴급',
-      status: '처리중',
-      manager: '박운영',
-      deadline: '2026-03-10',
-    },
-    {
-      alertNumber: 'ALT-2026-0311',
-      type: '세금계산서 미발행',
-      title: '세브란스병원 2월 세금계산서 미발행',
-      target: '세브란스병원',
-      relatedNumber: 'STL-2026-003',
-      issueDate: '2026-03-01',
-      priority: '긴급',
-      status: '미확인',
-      manager: '',
-      deadline: '2026-03-10',
-      relatedClient: '세브란스병원'
-    },
-    {
-      alertNumber: 'ALT-2026-0310',
-      type: '미수금 초과',
-      title: '삼성서울병원 미수금 D+5 초과',
-      target: '삼성서울병원',
-      relatedNumber: 'STL-2026-002',
-      issueDate: '2026-02-28',
-      priority: '높음',
-      status: '처리중',
-      manager: '강정산',
-      deadline: '2026-03-07',
-      relatedClient: '삼성서울병원'
-    },
-    {
-      alertNumber: 'ALT-2026-0309',
-      type: 'A/S 지연',
-      title: 'SVC-2026-0045 A/S 처리 지연',
-      target: 'MRI 스캐너',
-      relatedNumber: 'SVC-2026-0045',
-      issueDate: '2026-02-28',
-      priority: '높음',
-      status: '처리중',
-      manager: '정서비스',
-      deadline: '2026-03-05',
-      relatedClient: '아산병원',
-      relatedProduct: 'MRI 스캐너'
-    },
-    {
-      alertNumber: 'ALT-2026-0308',
-      type: '설치 일정 임박',
-      title: '서울성모병원 CT 스캐너 설치 3일 전',
-      target: 'CT 스캐너',
-      relatedNumber: 'INS-2026-0023',
-      issueDate: '2026-02-27',
-      priority: '보통',
-      status: '확인완료',
-      manager: '정서비스',
-      deadline: '2026-03-05',
-      relatedClient: '서울성모병원',
-      relatedProduct: 'CT 스캐너'
-    },
-    {
-      alertNumber: 'ALT-2026-0307',
-      type: '로트 추적 필요',
-      title: 'X-Ray 필름 품질 이슈 LOT-2025-1204',
-      target: 'X-Ray 필름',
-      relatedNumber: 'LOT-2025-1204',
-      issueDate: '2026-02-26',
-      priority: '긴급',
-      status: '처리완료',
-      manager: '박운영',
-      deadline: '2026-03-01',
-      relatedProduct: 'X-Ray 필름',
-      actionNote: '해당 로트 전량 회수 완료, 거래처 통보 완료'
-    },
-    {
-      alertNumber: 'ALT-2026-0306',
-      type: '보증 만료 예정',
-      title: '초음파 진단기 SN-2023-5678 보증 15일 전',
-      target: '초음파 진단기',
-      relatedNumber: 'SN-2023-5678',
-      issueDate: '2026-02-25',
-      priority: '보통',
-      status: '확인완료',
-      manager: '정서비스',
-      deadline: '2026-03-17',
-      relatedClient: '강남세브란스',
-      relatedProduct: '초음파 진단기'
-    },
-  ];
 
   const filteredAlerts = alerts.filter(alert => {
     const matchesSearch = 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useReceiving, useCreateReceiving, useUpdateReceiving } from "../../../hooks/use-receiving";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { PurchaseOrderForm } from "../components/PurchaseOrderForm";
@@ -47,69 +48,10 @@ export function ReceivingManagement() {
   const [detailPanelOrders, setDetailPanelOrders] = useState<PurchaseOrder[] | null>(null);
   const [detailPanelTitle, setDetailPanelTitle] = useState('');
 
-  // Mock data
-  const purchaseOrders: PurchaseOrder[] = [
-    {
-      poNumber: 'PO-2026-001',
-      orderDate: '2026-02-25',
-      supplier: '삼성메디슨',
-      manager: '김구매',
-      expectedDate: '2026-03-05',
-      totalAmount: 45000000,
-      items: 3,
-      status: '발주완료',
-      receivedQty: 0,
-      totalQty: 15
-    },
-    {
-      poNumber: 'PO-2026-002',
-      orderDate: '2026-02-28',
-      supplier: '바이엘코리아',
-      manager: '이구매',
-      expectedDate: '2026-03-10',
-      totalAmount: 28500000,
-      items: 2,
-      status: '부분입고',
-      receivedQty: 120,
-      totalQty: 240
-    },
-    {
-      poNumber: 'PO-2026-003',
-      orderDate: '2026-03-01',
-      supplier: 'GE헬스케어',
-      manager: '박구매',
-      expectedDate: '2026-03-08',
-      totalAmount: 89000000,
-      items: 5,
-      status: '입고완료',
-      receivedQty: 250,
-      totalQty: 250
-    },
-    {
-      poNumber: 'PO-2026-004',
-      orderDate: '2026-03-02',
-      supplier: '필립스',
-      manager: '최구매',
-      expectedDate: '2026-03-12',
-      totalAmount: 125000000,
-      items: 4,
-      status: '발주완료',
-      receivedQty: 0,
-      totalQty: 8
-    },
-    {
-      poNumber: 'PO-2026-005',
-      orderDate: '2026-02-20',
-      supplier: '메칼툴즈',
-      manager: '정구매',
-      expectedDate: '2026-03-01',
-      totalAmount: 15600000,
-      items: 6,
-      status: '지연',
-      receivedQty: 0,
-      totalQty: 35
-    },
-  ];
+  const { data: purchaseOrders = [], isLoading, error } = useReceiving({ search: searchTerm });
+  const createReceiving = useCreateReceiving();
+  const updateReceiving = useUpdateReceiving();
+
 
   const filteredOrders = purchaseOrders.filter(order => {
     const matchesSearch = 
