@@ -1,4 +1,0 @@
-{"t":0,"agent":"system","event":"skill_invoked","skill_name":"oh-my-claudecode:ralph"}
-{"t":0,"agent":"system","event":"skill_invoked","skill_name":"oh-my-claudecode:cancel"}
-{"t":0,"agent":"a265824","agent_type":"Explore","event":"agent_start","parent_mode":"none"}
-{"t":0,"agent":"a265824","agent_type":"Explore","event":"agent_stop","success":true,"duration_ms":274454}

@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"git worktree remove ../wt-backend-infra --force 2>&1 || (rm -rf /d/Project/wt-backend-infra && git worktree prune && echo \\\"infra removed\\\") && git worktree remove ../wt-backend-ops-a --fo...",
-  "error": "Exit code 255\nfatal: '../wt-backend-infra' is not a working tree\ninfra removed\nerror: failed to delete 'D:/Project/wt-backend-ops-a': Directory not empty",
-  "timestamp": "2026-04-03T03:34:06.946Z",
-  "retry_count": 4
-}

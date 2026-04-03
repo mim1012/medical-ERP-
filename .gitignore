@@ -24,3 +24,14 @@ Thumbs.db
 .claude/handoff.md
 .claude/checkpoints/
 .claude/web-checklist-state.json
+
+# Claude Code / OMC
+.claude/settings.local.json
+.omc/
+apps/api/.omc/
+apps/web/.omc/
+# Claude Code / OMC
+.claude/settings.local.json
+.omc/
+apps/api/.omc/
+apps/web/.omc/
