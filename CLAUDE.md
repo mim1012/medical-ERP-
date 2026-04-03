@@ -8,8 +8,8 @@
 ### Frontend
 - **Framework**: React 18 + TypeScript
 - **Build**: Vite 6
-- **Styling**: Tailwind CSS v4 + MUI v7
-- **UI Components**: Radix UI (shadcn/ui 기반) + MUI
+- **Styling**: Tailwind CSS v4
+- **UI Components**: Radix UI (shadcn/ui 기반)
 - **Routing**: React Router v7
 - **Charts**: Recharts
 - **Forms**: React Hook Form
@@ -25,7 +25,7 @@
 - **Realtime**: Supabase Realtime (알림, 재고 변동)
 
 ### Infra
-- **배포**: Vercel (프론트엔드) + Supabase Cloud (백엔드/DB)
+- **배포**: Vercel (프론트엔드 + NestJS API Serverless Functions) + Supabase Cloud (DB/Auth/Storage)
 - **CI/CD**: GitHub Actions
 - **모니터링**: Sentry
 - **테스트**: Vitest (FE) + Jest (BE) + Playwright (E2E)
@@ -79,9 +79,19 @@ src/
 - TypeScript strict mode
 - Immutable 패턴 (spread operator)
 - 컴포넌트: 함수형 + named export
-- 스타일: Tailwind CSS 우선, MUI는 복잡한 컴포넌트에만 사용
+- 스타일: Tailwind CSS + shadcn/ui 전용 (MUI 사용 금지)
 - 경로 alias: `@/` -> `src/`
 - 파일 크기: 800줄 이하
+
+## 아키텍처 결정 사항
+
+| 항목 | 결정 | 비고 |
+|------|------|------|
+| NestJS 배포 | Vercel Serverless Functions | `@vercel/node` 어댑터 사용 |
+| MUI | 사용 안 함, 제거 대상 | shadcn/ui + Tailwind로 통일 |
+| 세금계산서 연동 | 홈택스 직접 연동 (국세청 SOAP API) | 공인인증서 관리 로직 별도 필요 |
+| 사용자-조직 관계 | 1:1 (한 사용자는 하나의 조직만) | User -> Organization N:1 유지 |
+| 데이터 접근 경로 | NestJS API 단일 경유 | FE에서 Supabase 직접 DB 접근 금지 |
 
 ## 도메인 용어
 | 용어 | 설명 |

@@ -5,9 +5,6 @@ node_modules/
 dist/
 .turbo/
 
-# Prisma
-apps/api/prisma/migrations/
-
 # Environment
 .env
 .env.local
