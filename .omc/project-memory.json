@@ -1,0 +1,315 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1775184063628,
+  "projectRoot": "D:\\Project\\medical-ERP-",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      }
+    ],
+    "frameworks": [],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "npm run build",
+    "testCommand": "npm test",
+    "lintCommand": "npm run lint",
+    "devCommand": "npm run dev",
+    "scripts": {
+      "dev": "turbo run dev",
+      "dev:web": "turbo run dev --filter=@medical-erp/web",
+      "dev:api": "turbo run dev --filter=@medical-erp/api",
+      "build": "turbo run build",
+      "lint": "turbo run lint",
+      "test": "turbo run test",
+      "type-check": "turbo run type-check"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": true,
+    "workspaces": [
+      "apps/*",
+      "packages/*"
+    ],
+    "mainDirectories": [],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "apps": {
+      "path": "apps",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1775184063534,
+      "keyFiles": []
+    },
+    "guidelines": {
+      "path": "guidelines",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775184063551,
+      "keyFiles": [
+        "Guidelines.md"
+      ]
+    },
+    "packages": {
+      "path": "packages",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1775184063552,
+      "keyFiles": []
+    },
+    "apps\\api": {
+      "path": "apps\\api",
+      "purpose": "API routes",
+      "fileCount": 5,
+      "lastAccessed": 1775184063553,
+      "keyFiles": [
+        "nest-cli.json",
+        "package.json",
+        "tsconfig.json"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 5,
+      "lastAccessed": 1775184477271,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\package.json",
+      "accessCount": 5,
+      "lastAccessed": 1775185054930,
+      "type": "file"
+    },
+    {
+      "path": "apps\\api\\prisma\\schema.prisma",
+      "accessCount": 4,
+      "lastAccessed": 1775185338281,
+      "type": "file"
+    },
+    {
+      "path": "apps\\api\\src\\app.module.ts",
+      "accessCount": 3,
+      "lastAccessed": 1775185062783,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\pages\\Dashboard.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775185056460,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\pages\\ClientManagement.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775185061041,
+      "type": "file"
+    },
+    {
+      "path": "apps\\api\\src\\prisma\\prisma.service.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775185062493,
+      "type": "file"
+    },
+    {
+      "path": "apps\\api\\package.json",
+      "accessCount": 2,
+      "lastAccessed": 1775185063238,
+      "type": "file"
+    },
+    {
+      "path": "apps\\api\\src\\app.controller.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775185067299,
+      "type": "file"
+    },
+    {
+      "path": "apps\\api\\src\\app.service.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775185067705,
+      "type": "file"
+    },
+    {
+      "path": "apps\\api\\src\\main.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775185068063,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 1,
+      "lastAccessed": 1775184137949,
+      "type": "file"
+    },
+    {
+      "path": "turbo.json",
+      "accessCount": 1,
+      "lastAccessed": 1775184138270,
+      "type": "file"
+    },
+    {
+      "path": "packages\\shared\\package.json",
+      "accessCount": 1,
+      "lastAccessed": 1775184170094,
+      "type": "file"
+    },
+    {
+      "path": "spec.md",
+      "accessCount": 1,
+      "lastAccessed": 1775184170880,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src",
+      "accessCount": 1,
+      "lastAccessed": 1775184192382,
+      "type": "directory"
+    },
+    {
+      "path": "apps\\web\\src\\app\\pages\\InventoryManagement.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775184710831,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\pages\\ProductManagement.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775184714724,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\pages\\ShippingManagement.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775184715428,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\pages\\ReceivingManagement.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775184801795,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\pages\\ServiceManagement.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775184802264,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\pages\\TaxInvoiceManagement.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775184802669,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\pages\\UserManagement.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775184802974,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\pages\\AlertCenter.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775184806318,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\pages\\DocumentManagement.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775184806585,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\pages\\LogHistory.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775184807052,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\pages\\SettlementManagement.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775184807352,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\components\\ClientForm.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775184810670,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\components\\ProductForm.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775184811174,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\main.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775185055256,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\App.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775185055513,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\routes.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775185055709,
+      "type": "file"
+    },
+    {
+      "path": "apps\\web\\src\\app\\components\\Sidebar.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775185056004,
+      "type": "file"
+    },
+    {
+      "path": "apps\\api\\.env",
+      "accessCount": 1,
+      "lastAccessed": 1775185063713,
+      "type": "file"
+    },
+    {
+      "path": "apps\\api\\.env.example",
+      "accessCount": 1,
+      "lastAccessed": 1775185063785,
+      "type": "file"
+    },
+    {
+      "path": "apps\\api\\src\\prisma\\prisma.module.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775185068115,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\PC_1M\\.claude\\plans\\precious-giggling-mccarthy.md",
+      "accessCount": 1,
+      "lastAccessed": 1775185225389,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

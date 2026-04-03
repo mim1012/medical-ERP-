@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAlerts, useMarkAlertRead, useMarkAllAlertsRead, useDeleteAlert } from "../../../hooks/use-alert";
+import { useAlerts, useMarkAlertRead, useMarkAllAlertsRead, useDeleteAlert } from "../../hooks/use-alert";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { AlertDetailPanel } from "../components/AlertDetailPanel";

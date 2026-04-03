@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useService, useCreateService, useUpdateService } from "../../../hooks/use-service";
+import { useService, useCreateService, useUpdateService } from "../../hooks/use-service";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { InstallationForm } from "../components/InstallationForm";

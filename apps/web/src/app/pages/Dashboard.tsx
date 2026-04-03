@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useDashboardStats } from "../../../hooks/use-dashboard";
+import { useDashboardStats } from "../../hooks/use-dashboard";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { KPICard } from "../components/KPICard";

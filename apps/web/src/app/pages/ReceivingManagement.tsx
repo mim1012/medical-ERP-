@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useReceiving, useCreateReceiving, useUpdateReceiving } from "../../../hooks/use-receiving";
+import { useReceiving, useCreateReceiving, useUpdateReceiving } from "../../hooks/use-receiving";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { PurchaseOrderForm } from "../components/PurchaseOrderForm";

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useTaxInvoices, useCreateTaxInvoice, useIssueTaxInvoice } from "../../../hooks/use-tax-invoice";
+import { useTaxInvoices, useCreateTaxInvoice, useIssueTaxInvoice } from "../../hooks/use-tax-invoice";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { TaxInvoiceForm } from "../components/TaxInvoiceForm";

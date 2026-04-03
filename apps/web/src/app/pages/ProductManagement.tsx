@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from "../../../hooks/use-products";
+import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from "../../hooks/use-products";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { ProductForm } from "../components/ProductForm";

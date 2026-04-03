@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLogs } from "../../../hooks/use-log";
+import { useLogs } from "../../hooks/use-log";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { LogDetailPanel } from "../components/LogDetailPanel";

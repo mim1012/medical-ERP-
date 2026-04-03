@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"node -e \\\"\\nconst { PrismaClient } = require('@prisma/client');\\nconst prisma = new PrismaClient({ datasources: { db: { url: 'postgresql://postgres.koguaoizxjmqsjzdmnsk:Rlawlgns2233%40@aws...",
+  "error": "Exit code 1\n\nInvalid `prisma.$queryRaw()` invocation:\n\n\nError querying the database: FATAL: Tenant or user not found",
+  "timestamp": "2026-03-28T16:45:34.100Z",
+  "retry_count": 4
+}

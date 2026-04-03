@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSettlement } from "../../../hooks/use-settlement";
+import { useSettlement } from "../../hooks/use-settlement";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { SettlementDetailPanel } from "../components/SettlementDetailPanel";

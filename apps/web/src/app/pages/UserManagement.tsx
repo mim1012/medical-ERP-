@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from "../../../hooks/use-users";
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from "../../hooks/use-users";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { UserForm } from "../components/UserForm";

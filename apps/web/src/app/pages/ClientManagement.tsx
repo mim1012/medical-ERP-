@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from "../../../hooks/use-clients";
+import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from "../../hooks/use-clients";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { ClientForm } from "../components/ClientForm";

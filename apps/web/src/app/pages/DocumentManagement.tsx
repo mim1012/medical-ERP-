@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useDocuments, useCreateDocument } from "../../../hooks/use-document";
+import { useDocuments, useCreateDocument } from "../../hooks/use-document";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { DocumentForm } from "../components/DocumentForm";

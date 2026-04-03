@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useInventory } from "../../../hooks/use-inventory";
+import { useInventory } from "../../hooks/use-inventory";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { InventoryDetailPanel } from "../components/InventoryDetailPanel";

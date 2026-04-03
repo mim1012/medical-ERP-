@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useShipping, useCreateShipment, useUpdateShipmentStatus } from "../../../hooks/use-shipping";
+import { useShipping, useCreateShipment, useUpdateShipmentStatus } from "../../hooks/use-shipping";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { StatusBadge } from "../components/StatusBadge";
