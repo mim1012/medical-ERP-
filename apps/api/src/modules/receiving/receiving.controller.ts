@@ -14,8 +14,7 @@ import { CreateReceivingDto } from './dto/create-receiving.dto'
 import { UpdateReceivingDto } from './dto/update-receiving.dto'
 import { QueryReceivingDto } from './dto/query-receiving.dto'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
-
-type AuthUser = { id: string; email: string; organizationId: string }
+import { AuthUser } from '../../common/types/auth-user.type'
 
 @ApiTags('receiving')
 @Controller('receiving')

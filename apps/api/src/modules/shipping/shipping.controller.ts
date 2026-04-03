@@ -14,8 +14,7 @@ import { CreateShippingDto } from './dto/create-shipping.dto'
 import { UpdateShippingDto } from './dto/update-shipping.dto'
 import { QueryShippingDto } from './dto/query-shipping.dto'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
-
-type AuthUser = { id: string; email: string; organizationId: string }
+import { AuthUser } from '../../common/types/auth-user.type'
 
 @ApiTags('shipping')
 @Controller('shipping')

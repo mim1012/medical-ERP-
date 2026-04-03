@@ -8,11 +8,25 @@ interface UploadedFile {
   url: string;
 }
 
+interface DocumentFormData {
+  documentName: string;
+  documentType: string;
+  version?: string;
+  relatedProduct?: string;
+  relatedClient?: string;
+  issueDate?: string;
+  expiryDate?: string;
+  manager?: string;
+  description?: string;
+  internalNotes?: string;
+  files: { name: string; url: string }[];
+}
+
 interface DocumentFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => void;
-  initialData?: any;
+  onSubmit: (data: DocumentFormData) => void;
+  initialData?: Partial<DocumentFormData>;
 }
 
 export function DocumentForm({ isOpen, onClose, onSubmit, initialData }: DocumentFormProps) {
@@ -29,8 +43,8 @@ export function DocumentForm({ isOpen, onClose, onSubmit, initialData }: Documen
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
-    const data = Object.fromEntries(formData.entries());
-    onSubmit({ ...data, files: uploadedFiles });
+    const entries = Object.fromEntries(formData.entries()) as Omit<DocumentFormData, 'files'>;
+    onSubmit({ ...entries, files: uploadedFiles });
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

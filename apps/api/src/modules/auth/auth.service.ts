@@ -1,17 +1,20 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common'
+import { Injectable, InternalServerErrorException, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { UserRole } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 import { SignupDto } from './dto/signup.dto'
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit {
+  private supabase!: SupabaseClient
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
   ) {}
 
-  async signup(dto: SignupDto) {
+  onModuleInit() {
     const supabaseUrl = this.configService.get<string>('SUPABASE_URL')
     const serviceRoleKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY')
 
@@ -19,9 +22,11 @@ export class AuthService {
       throw new InternalServerErrorException('Supabase configuration missing')
     }
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey)
+    this.supabase = createClient(supabaseUrl, serviceRoleKey)
+  }
 
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+  async signup(dto: SignupDto) {
+    const { data: authData, error: authError } = await this.supabase.auth.admin.createUser({
       email: dto.email,
       password: dto.password,
       email_confirm: true,
@@ -33,25 +38,30 @@ export class AuthService {
 
     const supabaseUserId = authData.user.id
 
-    const org = await this.prisma.organization.create({
-      data: { name: dto.orgName },
+    const { org, user } = await this.prisma.$transaction(async (tx) => {
+      const org = await tx.organization.create({
+        data: { name: dto.orgName },
+      })
+
+      const user = await tx.user.create({
+        data: {
+          email: dto.email,
+          name: dto.name,
+          role: UserRole.ADMIN,
+          supabaseUserId,
+          organizationId: org.id,
+        },
+      })
+
+      return { org, user }
     })
 
-    await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        name: dto.name,
-        role: 'ADMIN',
-        supabaseUserId,
-        organizationId: org.id,
-      },
-    })
-
-    const { error: updateError } = await supabase.auth.admin.updateUserById(supabaseUserId, {
+    const { error: updateError } = await this.supabase.auth.admin.updateUserById(supabaseUserId, {
       user_metadata: { organizationId: org.id },
     })
 
     if (updateError) {
+      await this.supabase.auth.admin.deleteUser(supabaseUserId)
       throw new InternalServerErrorException(updateError.message)
     }
 

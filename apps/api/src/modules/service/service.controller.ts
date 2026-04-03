@@ -14,8 +14,7 @@ import { CreateServiceDto } from './dto/create-service.dto'
 import { UpdateServiceDto } from './dto/update-service.dto'
 import { QueryServiceDto } from './dto/query-service.dto'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
-
-type AuthUser = { id: string; email: string; organizationId: string }
+import { AuthUser } from '../../common/types/auth-user.type'
 
 @ApiTags('service')
 @Controller('service')

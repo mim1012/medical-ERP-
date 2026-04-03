@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useShipping, useCreateShipment, useUpdateShipmentStatus } from "../../hooks/use-shipping";
 import { useProducts } from "../../hooks/use-products";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { StatusBadge } from "../components/StatusBadge";
 import { InspectorPanel } from "../components/InspectorPanel";
-import { 
+import {
   Search,
   Package,
   Building2,
@@ -15,12 +15,17 @@ import {
   FileText,
   Save,
   Send,
-  X,
-  ChevronRight,
-  Filter,
-  Calendar,
-  Eye
+  X
 } from "lucide-react";
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState<T>(value)
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(t)
+  }, [value, delay])
+  return debounced
+}
 
 interface Product {
   id: string;
@@ -78,7 +83,7 @@ export function ShippingManagement() {
   
   // Inspector Panel state
   const [inspectorOpen, setInspectorOpen] = useState(false);
-  const [inspectorType, setInspectorType] = useState<any>(null);
+  const [inspectorType, setInspectorType] = useState<string | null>(null);
   
   // View Mode: 'create' or 'list'
   const [viewMode, setViewMode] = useState<'create' | 'list'>('list');
@@ -92,14 +97,17 @@ export function ShippingManagement() {
   const [quantity, setQuantity] = useState(1);
   const [selectedLot, setSelectedLot] = useState('');
   const [selectedSerial, setSelectedSerial] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [searchProductTerm, setSearchProductTerm] = useState('');
   const [searchClientTerm, setSearchClientTerm] = useState('');
 
-  const { data: shipments = [], isLoading, error } = useShipping({ search: searchProductTerm });
+  const debouncedSearchProductTerm = useDebounce(searchProductTerm, 300);
+
+  const { data: shipments = [], isLoading, error } = useShipping({ search: searchTerm });
   const createShipment = useCreateShipment();
   const updateShipmentStatus = useUpdateShipmentStatus();
 
-  const { data: rawProducts = [] } = useProducts({ search: searchProductTerm });
+  const { data: rawProducts = [] } = useProducts({ search: debouncedSearchProductTerm });
   const products: Product[] = rawProducts.map((p) => ({
     id: p.id ?? '',
     name: p.name,
@@ -111,9 +119,9 @@ export function ShippingManagement() {
     availableQty: p.stockQuantity,
     status: p.status,
   }));
-  const productClientMapping: Record<string, any[]> = {};
-  const lotData: Record<string, any[]> = {};
-  const serialData: Record<string, any[]> = {};
+  const productClientMapping: Record<string, Client[]> = {};
+  const lotData: Record<string, LotInfo[]> = {};
+  const serialData: Record<string, SerialInfo[]> = {};
 
   // Mobile step state
   const [mobileStep, setMobileStep] = useState<1 | 2 | 3>(1);
@@ -618,20 +626,25 @@ export function ShippingManagement() {
 
                 {/* Total Summary */}
                 <div className="bg-[#E8EEF3] rounded-lg p-6 border-2 border-[#163A5F]">
-                  <div className="grid grid-cols-3 gap-6">
-                    <div>
-                      <p className="text-sm text-[#5B6773] mb-1">총 공급가액</p>
-                      <p className="text-2xl font-bold text-[#18212B]">₩{formatCurrency(getTotalAmounts().supplyAmount)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-[#5B6773] mb-1">총 부가세</p>
-                      <p className="text-2xl font-bold text-[#18212B]">₩{formatCurrency(getTotalAmounts().taxAmount)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-[#5B6773] mb-1">총 합계</p>
-                      <p className="text-3xl font-bold text-[#163A5F]">₩{formatCurrency(getTotalAmounts().totalAmount)}</p>
-                    </div>
-                  </div>
+                  {(() => {
+                    const totals = getTotalAmounts();
+                    return (
+                      <div className="grid grid-cols-3 gap-6">
+                        <div>
+                          <p className="text-sm text-[#5B6773] mb-1">총 공급가액</p>
+                          <p className="text-2xl font-bold text-[#18212B]">₩{formatCurrency(totals.supplyAmount)}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-[#5B6773] mb-1">총 부가세</p>
+                          <p className="text-2xl font-bold text-[#18212B]">₩{formatCurrency(totals.taxAmount)}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-[#5B6773] mb-1">총 합계</p>
+                          <p className="text-3xl font-bold text-[#163A5F]">₩{formatCurrency(totals.totalAmount)}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className="mt-6 p-4 bg-[#E6F4EA] rounded-lg border border-[#2E7D5B]">
                     <div className="flex items-start gap-3">
