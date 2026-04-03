@@ -24,9 +24,18 @@ model Organization {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  users    User[]
-  clients  Client[]
-  products Product[]
+  users         User[]
+  clients       Client[]
+  products      Product[]
+  inventories   Inventory[]
+  shipments     Shipment[]
+  receivings    Receiving[]
+  serviceCases  ServiceCase[]
+  settlements   Settlement[]
+  taxInvoices   TaxInvoice[]
+  documents     Document[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
 
   @@map("organizations")
 }
@@ -77,6 +86,9 @@ model Client {
 
   shipments   Shipment[]
   serviceCase ServiceCase[]
+  settlements Settlement[]
+  taxInvoices TaxInvoice[]
+  documents   Document[]
 
   @@index([organizationId])
   @@map("clients")
@@ -114,14 +126,15 @@ model Product {
 
 // 재고
 model Inventory {
-  id             String   @id @default(uuid())
-  productId      String   @unique @map("product_id")
-  product        Product  @relation(fields: [productId], references: [id])
-  quantity       Int      @default(0)
-  safetyStock    Int      @default(0) @map("safety_stock")
-  lotNumber      String?  @map("lot_number")
-  organizationId String   @map("organization_id")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id             String       @id @default(uuid())
+  productId      String       @unique @map("product_id")
+  product        Product      @relation(fields: [productId], references: [id])
+  quantity       Int          @default(0)
+  safetyStock    Int          @default(0) @map("safety_stock")
+  lotNumber      String?      @map("lot_number")
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  updatedAt      DateTime     @updatedAt @map("updated_at")
 
   @@index([organizationId])
   @@map("inventories")
@@ -137,6 +150,7 @@ model Shipment {
   deliveredAt    DateTime?      @map("delivered_at")
   notes          String?
   organizationId String         @map("organization_id")
+  organization   Organization   @relation(fields: [organizationId], references: [id])
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
@@ -174,6 +188,7 @@ model Receiving {
   receivedAt     DateTime?       @map("received_at")
   notes          String?
   organizationId String          @map("organization_id")
+  organization   Organization    @relation(fields: [organizationId], references: [id])
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
 
@@ -213,6 +228,7 @@ model ServiceCase {
   assignee       String?
   resolvedAt     DateTime?     @map("resolved_at")
   organizationId String        @map("organization_id")
+  organization   Organization  @relation(fields: [organizationId], references: [id])
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
 
@@ -231,4 +247,121 @@ enum ServiceStatus {
   IN_PROGRESS
   RESOLVED
   CLOSED
+}
+
+// 정산
+model Settlement {
+  id             String           @id @default(uuid())
+  clientId       String           @map("client_id")
+  client         Client           @relation(fields: [clientId], references: [id])
+  type           SettlementType
+  amount         Decimal          @db.Decimal(12, 2)
+  status         SettlementStatus @default(PENDING)
+  dueDate        DateTime?        @map("due_date")
+  settledAt      DateTime?        @map("settled_at")
+  notes          String?
+  organizationId String           @map("organization_id")
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@map("settlements")
+}
+
+enum SettlementType {
+  RECEIVABLE
+  PAYABLE
+}
+
+enum SettlementStatus {
+  PENDING
+  PARTIAL
+  COMPLETED
+  OVERDUE
+}
+
+// 세금계산서
+model TaxInvoice {
+  id             String           @id @default(uuid())
+  clientId       String           @map("client_id")
+  client         Client           @relation(fields: [clientId], references: [id])
+  invoiceNumber  String           @unique @map("invoice_number")
+  amount         Decimal          @db.Decimal(12, 2)
+  tax            Decimal          @db.Decimal(12, 2)
+  status         TaxInvoiceStatus @default(DRAFT)
+  issuedAt       DateTime?        @map("issued_at")
+  notes          String?
+  organizationId String           @map("organization_id")
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@map("tax_invoices")
+}
+
+enum TaxInvoiceStatus {
+  DRAFT
+  ISSUED
+  CANCELLED
+}
+
+// 문서
+model Document {
+  id             String       @id @default(uuid())
+  title          String
+  type           DocumentType
+  clientId       String?      @map("client_id")
+  client         Client?      @relation(fields: [clientId], references: [id])
+  fileUrl        String?      @map("file_url")
+  expiresAt      DateTime?    @map("expires_at")
+  notes          String?
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@map("documents")
+}
+
+enum DocumentType {
+  CONTRACT
+  CERTIFICATE
+  MANUAL
+  WARRANTY
+  OTHER
+}
+
+// 알림
+model Notification {
+  id             String   @id @default(uuid())
+  title          String
+  message        String
+  type           String
+  isRead         Boolean  @default(false) @map("is_read")
+  userId         String?  @map("user_id")
+  organizationId String   @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([organizationId])
+  @@map("notifications")
+}
+
+// 감사 로그
+model AuditLog {
+  id             String   @id @default(uuid())
+  action         String
+  resource       String
+  resourceId     String?  @map("resource_id")
+  userId         String?  @map("user_id")
+  details        Json?
+  organizationId String   @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([organizationId])
+  @@map("audit_logs")
 }
