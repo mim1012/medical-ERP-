@@ -7,14 +7,16 @@ export interface Alert {
   title: string
   message: string
   isRead: boolean
+  userId: string | null
+  organizationId: string
   createdAt: string
 }
 
-export function useAlerts() {
+export function useAlerts(params?: { isRead?: boolean }) {
   return useQuery({
-    queryKey: ['alert'],
+    queryKey: ['alert', params],
     queryFn: async () => {
-      const { data } = await apiClient.get('/alert')
+      const { data } = await apiClient.get('/alert', { params })
       return (data.data ?? []) as Alert[]
     },
   })
@@ -25,7 +27,7 @@ export function useUnreadAlertCount() {
     queryKey: ['alert', 'unread-count'],
     queryFn: async () => {
       const { data } = await apiClient.get('/alert/unread-count')
-      return data.data as number
+      return (data.data as { count: number }).count
     },
   })
 }

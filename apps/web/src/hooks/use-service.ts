@@ -1,19 +1,32 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../lib/api-client'
+import type { Client } from './use-clients'
+
+export type ServiceType = 'INSTALLATION' | 'REPAIR' | 'MAINTENANCE'
+export type ServiceStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
 
 export interface ServiceCase {
-  id?: string
-  code: string
-  client: string
-  product: string
-  type: string
-  requestDate: string
-  status: string
-  engineer?: string
-  description?: string
+  id: string
+  clientId: string
+  client: Client
+  type: ServiceType
+  status: ServiceStatus
+  description: string | null
+  assignee: string | null
+  resolvedAt: string | null
+  organizationId: string
+  createdAt: string
+  updatedAt: string
 }
 
-export function useService(params?: { search?: string; type?: string; status?: string }) {
+export interface CreateServiceDto {
+  clientId: string
+  type: ServiceType
+  description?: string
+  assignee?: string
+}
+
+export function useService(params?: { clientId?: string; type?: ServiceType; status?: ServiceStatus }) {
   return useQuery({
     queryKey: ['service', params],
     queryFn: async () => {
@@ -26,7 +39,7 @@ export function useService(params?: { search?: string; type?: string; status?: s
 export function useCreateService() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (dto: Omit<ServiceCase, 'id'>) => {
+    mutationFn: async (dto: CreateServiceDto) => {
       const { data } = await apiClient.post('/service', dto)
       return data.data as ServiceCase
     },
@@ -37,7 +50,10 @@ export function useCreateService() {
 export function useUpdateService() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, ...dto }: Partial<ServiceCase> & { id: string }) => {
+    mutationFn: async ({
+      id,
+      ...dto
+    }: { id: string; status?: ServiceStatus; assignee?: string; description?: string }) => {
       const { data } = await apiClient.patch(`/service/${id}`, dto)
       return data.data as ServiceCase
     },

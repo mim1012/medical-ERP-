@@ -1,19 +1,44 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../lib/api-client'
+import type { Client } from './use-clients'
+import type { Product } from './use-products'
 
-export interface Shipment {
-  id?: string
-  code: string
-  client: string
-  product: string
+export type ShipmentStatus = 'REQUESTED' | 'APPROVED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
+
+export interface ShipmentItem {
+  id: string
+  shipmentId: string
+  productId: string
+  product: Product
   quantity: number
-  date: string
-  status: string
-  address?: string
-  trackingNumber?: string
+  unitPrice: string  // Decimal serialized as string
 }
 
-export function useShipping(params?: { search?: string; status?: string }) {
+export interface Shipment {
+  id: string
+  clientId: string
+  client: Client
+  status: ShipmentStatus
+  shippedAt: string | null
+  deliveredAt: string | null
+  notes: string | null
+  organizationId: string
+  createdAt: string
+  updatedAt: string
+  items: ShipmentItem[]
+}
+
+export interface CreateShipmentDto {
+  clientId: string
+  notes?: string
+  items: Array<{
+    productId: string
+    quantity: number
+    unitPrice: number
+  }>
+}
+
+export function useShipping(params?: { clientId?: string; status?: ShipmentStatus }) {
   return useQuery({
     queryKey: ['shipping', params],
     queryFn: async () => {
@@ -26,19 +51,8 @@ export function useShipping(params?: { search?: string; status?: string }) {
 export function useCreateShipment() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (dto: Omit<Shipment, 'id'>) => {
+    mutationFn: async (dto: CreateShipmentDto) => {
       const { data } = await apiClient.post('/shipping', dto)
-      return data.data as Shipment
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['shipping'] }),
-  })
-}
-
-export function useUpdateShipment() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async ({ id, ...dto }: Partial<Shipment> & { id: string }) => {
-      const { data } = await apiClient.patch(`/shipping/${id}`, dto)
       return data.data as Shipment
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['shipping'] }),
@@ -48,8 +62,8 @@ export function useUpdateShipment() {
 export function useUpdateShipmentStatus() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { data } = await apiClient.patch(`/shipping/${id}/status`, { status })
+    mutationFn: async ({ id, status, notes }: { id: string; status: ShipmentStatus; notes?: string }) => {
+      const { data } = await apiClient.patch(`/shipping/${id}/status`, { status, notes })
       return data.data as Shipment
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['shipping'] }),

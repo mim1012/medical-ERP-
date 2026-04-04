@@ -22,6 +22,7 @@ import { AlertModule } from './modules/alert/alert.module'
 import { LogModule } from './modules/log/log.module'
 import { UsersModule } from './modules/users/users.module'
 import { AuthModule } from './modules/auth/auth.module'
+import { HealthModule } from './health/health.module'
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { AuthModule } from './modules/auth/auth.module'
     LogModule,
     UsersModule,
     AuthModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
 import { UpdateInventoryDto } from './dto/update-inventory.dto'
 
@@ -27,5 +27,17 @@ export class InventoryService {
   async update(id: string, organizationId: string, dto: UpdateInventoryDto) {
     await this.findOne(id, organizationId)
     return this.prisma.inventory.update({ where: { id }, data: dto })
+  }
+
+  async adjust(id: string, organizationId: string, dto: { quantity: number }) {
+    const inv = await this.findOne(id, organizationId)
+    if (inv.quantity + dto.quantity < 0) {
+      throw new BadRequestException('Resulting quantity cannot be negative')
+    }
+    return this.prisma.inventory.update({
+      where: { id },
+      data: { quantity: { increment: dto.quantity } },
+      include: { product: true },
+    })
   }
 }

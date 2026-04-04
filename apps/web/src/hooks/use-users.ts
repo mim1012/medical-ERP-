@@ -1,18 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../lib/api-client'
 
+export type UserRole = 'ADMIN' | 'MANAGER' | 'STAFF'
+
 export interface User {
-  id?: string
-  name: string
+  id: string
   email: string
-  role: string
-  department: string
-  status: string
-  lastLogin?: string
-  createdAt?: string
+  name: string
+  role: UserRole
+  supabaseUserId: string | null
+  organizationId: string
+  createdAt: string
+  updatedAt: string
 }
 
-export function useUsers(params?: { search?: string; role?: string }) {
+export interface UpdateUserDto {
+  name?: string
+  role?: UserRole
+}
+
+export function useUsers(params?: { role?: UserRole }) {
   return useQuery({
     queryKey: ['users', params],
     queryFn: async () => {
@@ -22,21 +29,10 @@ export function useUsers(params?: { search?: string; role?: string }) {
   })
 }
 
-export function useCreateUser() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (dto: Omit<User, 'id'>) => {
-      const { data } = await apiClient.post('/users', dto)
-      return data.data as User
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
-  })
-}
-
 export function useUpdateUser() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, ...dto }: Partial<User> & { id: string }) => {
+    mutationFn: async ({ id, ...dto }: UpdateUserDto & { id: string }) => {
       const { data } = await apiClient.patch(`/users/${id}`, dto)
       return data.data as User
     },

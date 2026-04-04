@@ -2,31 +2,28 @@ import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '../lib/api-client'
 
 export interface DashboardStats {
-  monthlyRevenue: number
+  totalClients: number
+  totalProducts: number
+  monthlyShipments: number
+  lowStockCount: number
+  openServiceCases: number
   unpaidBalance: number
-  todayShipments: number
-  asRequests: number
-  expiringProducts: number
-  warrantyExpiry: number
-  monthlyRevenueChart: { month: string; revenue: number }[]
-  clientRevenue: { name: string; revenue: number }[]
-  productShare: { name: string; value: number; color: string }[]
-  recentShipments: {
+  recentNotifications: Array<{
     id: string
-    client: string
-    product: string
-    quantity: number
-    date: string
-    status: string
-  }[]
-  recentService: {
-    id: string
-    client: string
-    product: string
+    title: string
+    message: string
     type: string
-    date: string
+    isRead: boolean
+    createdAt: string
+  }>
+  monthlyRevenueChart: Array<{ month: string; revenue: number }>
+  recentShipments: Array<{
+    id: string
+    clientName: string
+    itemCount: number
     status: string
-  }[]
+    createdAt: string
+  }>
 }
 
 export function useDashboardStats() {

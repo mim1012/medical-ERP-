@@ -5,12 +5,7 @@ import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
 import { QueryProductDto } from './dto/query-product.dto'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
-
-interface AuthUser {
-  id: string
-  email: string
-  organizationId: string
-}
+import { AuthUser } from '../../common/types/auth-user.type'
 
 @ApiTags('products')
 @ApiBearerAuth()

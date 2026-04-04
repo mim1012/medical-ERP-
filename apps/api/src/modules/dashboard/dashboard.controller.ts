@@ -2,12 +2,7 @@ import { Controller, Get } from '@nestjs/common'
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger'
 import { DashboardService } from './dashboard.service'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
-
-interface AuthUser {
-  id: string
-  email: string
-  organizationId: string
-}
+import { AuthUser } from '../../common/types/auth-user.type'
 
 @ApiTags('dashboard')
 @ApiBearerAuth()

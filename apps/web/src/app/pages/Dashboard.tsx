@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useDashboardStats } from "../../hooks/use-dashboard";
+import { formatKRW } from "../../lib/format";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { KPICard } from "../components/KPICard";
@@ -14,22 +15,19 @@ import {
   AlertTriangle,
   Calendar,
   Package,
-  FileX,
   BarChart3,
   ShoppingCart,
   Hash,
   FileWarning,
   Receipt,
-  Upload
 } from "lucide-react";
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export function Dashboard() {
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showAllShipments, setShowAllShipments] = useState(false);
   const [showAllService, setShowAllService] = useState(false);
-  const [showAllDocuments, setShowAllDocuments] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [inspectorType, setInspectorType] = useState<'lot-tracking' | 'serial-missing' | 'low-stock' | 'document-expiry' | 'tax-pending' | 'monthly-revenue' | 'unpaid-balance' | 'today-shipment' | 'as-requests' | 'expiring-products' | 'warranty-expiry' | 'weekly-schedule' | null>(null);
 
@@ -46,11 +44,8 @@ export function Dashboard() {
   const { data: dashboardStats } = useDashboardStats();
 
   const monthlyRevenue = dashboardStats?.monthlyRevenueChart ?? [];
-  const clientRevenue = dashboardStats?.clientRevenue ?? [];
-  const productShare = dashboardStats?.productShare ?? [];
   const recentShipments = dashboardStats?.recentShipments ?? [];
-  const recentService = dashboardStats?.recentService ?? [];
-  const recentDocuments: { id: string; type: string; client: string; uploadDate: string; expiryDate: string; status: string }[] = [];
+  const recentNotifications = dashboardStats?.recentNotifications ?? [];
   
   return (
     <div className="min-h-screen bg-[#F4F7FA]">
@@ -74,58 +69,56 @@ export function Dashboard() {
           <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-1.5 mb-2">
             <KPICard
               title="이번 달 매출"
-              value="4.23억"
-              subtitle="목표 112%"
+              value={monthlyRevenue.length > 0 ? formatKRW(monthlyRevenue[monthlyRevenue.length - 1].revenue, { abbreviate: true }) : '-'}
+              subtitle="최근 월 기준"
               icon={DollarSign}
-              trend={{ value: "23.5%", isPositive: true }}
               color="primary"
               onClick={() => handleKPIClick('monthly-revenue')}
             />
             <KPICard
               title="미수금 잔액"
-              value="1.2억"
-              subtitle="15개 거래처"
+              value={dashboardStats ? formatKRW(dashboardStats.unpaidBalance, { abbreviate: true }) : '-'}
+              subtitle="미수/부분납 합계"
               icon={Clock}
-              trend={{ value: "8.2%", isPositive: false }}
               color="warning"
               onClick={() => handleKPIClick('unpaid-balance')}
             />
             <KPICard
-              title="오늘 출고 예정"
-              value="12건"
-              subtitle="48개 품목"
+              title="이번 달 출고"
+              value={dashboardStats ? `${dashboardStats.monthlyShipments}건` : '-'}
+              subtitle="이번 달 기준"
               icon={TruckIcon}
               color="primary"
               onClick={() => handleKPIClick('today-shipment')}
             />
             <KPICard
               title="A/S 접수 건수"
-              value="8건"
-              subtitle="긴급 2건"
+              value={dashboardStats ? `${dashboardStats.openServiceCases}건` : '-'}
+              subtitle="진행 중 포함"
               icon={Wrench}
               color="success"
               onClick={() => handleKPIClick('as-requests')}
             />
             <KPICard
-              title="유효기간 임박"
-              value="23품목"
-              subtitle="30일 이내"
+              title="재고 부족"
+              value={dashboardStats ? `${dashboardStats.lowStockCount}품목` : '-'}
+              subtitle="안전재고 미달"
               icon={AlertTriangle}
               color="danger"
               onClick={() => handleKPIClick('expiring-products')}
             />
             <KPICard
-              title="보증 만료 예정"
-              value="5대"
-              subtitle="60일 이내"
+              title="총 거래처"
+              value={dashboardStats ? `${dashboardStats.totalClients}개` : '-'}
+              subtitle="등록된 거래처"
               icon={Calendar}
               color="warning"
               onClick={() => handleKPIClick('warranty-expiry')}
             />
             <KPICard
-              title="주간 일정"
-              value="3건"
-              subtitle="3월 1주차"
+              title="총 제품"
+              value={dashboardStats ? `${dashboardStats.totalProducts}개` : '-'}
+              subtitle="등록된 제품"
               icon={Calendar}
               color="primary"
               onClick={() => handleKPIClick('weekly-schedule')}
@@ -138,7 +131,7 @@ export function Dashboard() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-1.5">
               <AlertCard
                 title="로트 추적 필요"
-                count={7}
+                count={0}
                 description="시리얼 번호 미등록 품목"
                 icon={Package}
                 severity="high"
@@ -146,7 +139,7 @@ export function Dashboard() {
               />
               <AlertCard
                 title="시리얼 등록 누락"
-                count={15}
+                count={0}
                 description="출고 후 미등록 장비"
                 icon={Hash}
                 severity="high"
@@ -154,7 +147,7 @@ export function Dashboard() {
               />
               <AlertCard
                 title="재고 부족"
-                count={12}
+                count={dashboardStats?.lowStockCount ?? 0}
                 description="안전재고 미달 품목"
                 icon={AlertTriangle}
                 severity="medium"
@@ -162,7 +155,7 @@ export function Dashboard() {
               />
               <AlertCard
                 title="문서 만료 예정"
-                count={8}
+                count={0}
                 description="30일 이내 만료 문서"
                 icon={FileWarning}
                 severity="medium"
@@ -170,7 +163,7 @@ export function Dashboard() {
               />
               <AlertCard
                 title="세금계산서 미발행"
-                count={5}
+                count={0}
                 description="발행 대기 중인 건"
                 icon={Receipt}
                 severity="high"
@@ -210,60 +203,57 @@ export function Dashboard() {
               </ResponsiveContainer>
             </div>
             
-            {/* Client Revenue Chart */}
+            {/* Summary Stats */}
             <div className="bg-white rounded-lg border border-[#D7DEE6] p-3 shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm lg:text-base font-bold text-[#18212B] flex items-center gap-2">
                   <ShoppingCart className="w-4 h-4 text-[#5B8DB8]" />
-                  거래처별 매출 순위
+                  주요 현황 요약
                 </h3>
-                <span className="text-xs text-[#5B6773]">이번 달</span>
+                <span className="text-xs text-[#5B6773]">실시간</span>
               </div>
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={clientRevenue} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#D7DEE6" />
-                  <XAxis type="number" stroke="#5B6773" style={{ fontSize: '11px' }} />
-                  <YAxis type="category" dataKey="name" stroke="#5B6773" width={100} style={{ fontSize: '11px' }} />
-                  <Tooltip 
-                    formatter={(value: number) => `${(value / 100000000).toFixed(1)}억원`}
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #D7DEE6', borderRadius: '6px', fontSize: '11px' }}
-                  />
-                  <Bar dataKey="revenue" fill="#163A5F" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                <div className="p-3 bg-[#F4F7FA] rounded-lg">
+                  <p className="text-[10px] text-[#5B6773] mb-1">총 거래처</p>
+                  <p className="text-xl font-bold text-[#163A5F]">{dashboardStats?.totalClients ?? '-'}</p>
+                  <p className="text-[10px] text-[#5B6773]">개</p>
+                </div>
+                <div className="p-3 bg-[#F4F7FA] rounded-lg">
+                  <p className="text-[10px] text-[#5B6773] mb-1">총 제품</p>
+                  <p className="text-xl font-bold text-[#163A5F]">{dashboardStats?.totalProducts ?? '-'}</p>
+                  <p className="text-[10px] text-[#5B6773]">개</p>
+                </div>
+                <div className="p-3 bg-[#F4F7FA] rounded-lg">
+                  <p className="text-[10px] text-[#5B6773] mb-1">이번 달 출고</p>
+                  <p className="text-xl font-bold text-[#163A5F]">{dashboardStats?.monthlyShipments ?? '-'}</p>
+                  <p className="text-[10px] text-[#5B6773]">건</p>
+                </div>
+                <div className="p-3 bg-[#F4F7FA] rounded-lg">
+                  <p className="text-[10px] text-[#5B6773] mb-1">A/S 진행 중</p>
+                  <p className="text-xl font-bold text-[#E05A5A]">{dashboardStats?.openServiceCases ?? '-'}</p>
+                  <p className="text-[10px] text-[#5B6773]">건</p>
+                </div>
+              </div>
             </div>
           </div>
           
           {/* Product Share & Schedule */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-2">
-            {/* Product Share */}
+            {/* Unpaid Balance */}
             <div className="bg-white rounded-lg border border-[#D7DEE6] p-3 shadow-sm">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm lg:text-base font-bold text-[#18212B]">품목별 매출 비중</h3>
-                <span className="text-xs text-[#5B6773]">이번 달</span>
+                <h3 className="text-sm lg:text-base font-bold text-[#18212B]">미수금 현황</h3>
+                <span className="text-xs text-[#5B6773]">미수/부분납</span>
               </div>
-              <ResponsiveContainer width="100%" height={180}>
-                <PieChart>
-                  <Pie
-                    data={productShare}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={70}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {productShare.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value: number) => `${value}%`}
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #D7DEE6', borderRadius: '6px', fontSize: '11px' }} 
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="flex flex-col items-center justify-center h-[180px] gap-2">
+                <p className="text-4xl font-bold text-[#E07B5A]">
+                  {dashboardStats ? formatKRW(dashboardStats.unpaidBalance, { abbreviate: true }) : '-'}
+                </p>
+                <p className="text-sm text-[#5B6773]">미수금 잔액 합계</p>
+                <div className="mt-2 px-4 py-2 bg-[#FFF4F0] rounded-lg border border-[#F0C9BA]">
+                  <p className="text-xs text-[#E07B5A]">RECEIVABLE 미수/부분납 기준</p>
+                </div>
+              </div>
             </div>
             
             {/* Installation Schedule */}
@@ -331,22 +321,18 @@ export function Dashboard() {
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
                         <p className="text-xs font-bold text-[#163A5F] mb-1">{item.id}</p>
-                        <p className="text-sm font-semibold text-[#18212B]">{item.client}</p>
+                        <p className="text-sm font-semibold text-[#18212B]">{item.clientName}</p>
                       </div>
                       <StatusBadge status={item.status} />
                     </div>
                     <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#D7DEE6]">
                       <div>
-                        <p className="text-[10px] text-[#5B6773] mb-0.5">품목</p>
-                        <p className="text-xs text-[#18212B]">{item.product}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-[#5B6773] mb-0.5">수량</p>
-                        <p className="text-xs font-bold text-[#18212B]">{item.quantity}</p>
+                        <p className="text-[10px] text-[#5B6773] mb-0.5">품목 수</p>
+                        <p className="text-xs font-bold text-[#18212B]">{item.itemCount}개</p>
                       </div>
                       <div className="col-span-2">
                         <p className="text-[10px] text-[#5B6773] mb-0.5">출고일</p>
-                        <p className="text-xs text-[#18212B]">{item.date}</p>
+                        <p className="text-xs text-[#18212B]">{new Date(item.createdAt).toLocaleDateString('ko-KR')}</p>
                       </div>
                     </div>
                   </div>
@@ -360,8 +346,7 @@ export function Dashboard() {
                     <tr className="border-b-2 border-[#D7DEE6] bg-[#F4F7FA]">
                       <th className="text-left py-3 px-4 text-sm font-semibold text-[#18212B]">출고번호</th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-[#18212B]">거래처</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-[#18212B]">품목</th>
-                      <th className="text-center py-3 px-4 text-sm font-semibold text-[#18212B]">수량</th>
+                      <th className="text-center py-3 px-4 text-sm font-semibold text-[#18212B]">품목 수</th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-[#18212B]">출고일</th>
                       <th className="text-center py-3 px-4 text-sm font-semibold text-[#18212B]">상태</th>
                     </tr>
@@ -370,10 +355,9 @@ export function Dashboard() {
                     {recentShipments.map((item) => (
                       <tr key={item.id} className="border-b border-[#D7DEE6] hover:bg-[#F4F7FA] transition-colors">
                         <td className="py-4 px-4 text-sm font-semibold text-[#163A5F]">{item.id}</td>
-                        <td className="py-4 px-4 text-sm text-[#18212B]">{item.client}</td>
-                        <td className="py-4 px-4 text-sm text-[#5B6773]">{item.product}</td>
-                        <td className="py-4 px-4 text-sm text-center text-[#18212B] font-semibold">{item.quantity}</td>
-                        <td className="py-4 px-4 text-sm text-[#5B6773]">{item.date}</td>
+                        <td className="py-4 px-4 text-sm text-[#18212B]">{item.clientName}</td>
+                        <td className="py-4 px-4 text-sm text-center text-[#18212B] font-semibold">{item.itemCount}개</td>
+                        <td className="py-4 px-4 text-sm text-[#5B6773]">{new Date(item.createdAt).toLocaleDateString('ko-KR')}</td>
                         <td className="py-4 px-4 text-center">
                           <StatusBadge status={item.status} />
                         </td>
@@ -386,118 +370,34 @@ export function Dashboard() {
             
             {/* Recent A/S and Documents Side by Side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-              {/* Recent A/S */}
+              {/* Recent Notifications */}
               <div className="bg-white rounded-lg border border-[#D7DEE6] p-3 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm lg:text-base font-bold text-[#18212B]">최근 A/S 현황</h3>
+                  <h3 className="text-sm lg:text-base font-bold text-[#18212B]">최근 알림</h3>
                   <button className="text-xs text-[#5B8DB8] hover:text-[#163A5F] font-semibold" onClick={() => setShowAllService(!showAllService)}>
                     {showAllService ? '접기' : '전체'} →
                   </button>
                 </div>
-                
-                {/* Mobile Card View */}
-                <div className="lg:hidden space-y-3">
-                  {recentService.map((item) => (
-                    <div key={item.id} className="border border-[#D7DEE6] rounded-lg p-3 hover:bg-[#F4F7FA] transition-colors">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <p className="text-xs font-bold text-[#163A5F] mb-1">{item.id}</p>
-                          <p className="text-sm font-semibold text-[#18212B]">{item.client}</p>
-                        </div>
-                        <StatusBadge status={item.status} />
+
+                <div className="space-y-2">
+                  {(showAllService ? recentNotifications : recentNotifications.slice(0, 4)).map((item) => (
+                    <div key={item.id} className="flex items-start gap-2 p-2 rounded-lg border border-[#D7DEE6] hover:bg-[#F4F7FA] transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-[#18212B] truncate">{item.title}</p>
+                        <p className="text-[10px] text-[#5B6773] truncate">{item.message}</p>
+                        <p className="text-[10px] text-[#5B6773]">{new Date(item.createdAt).toLocaleDateString('ko-KR')}</p>
                       </div>
-                      <div className="pt-2 border-t border-[#D7DEE6]">
-                        <p className="text-[10px] text-[#5B6773] mb-0.5">유형</p>
-                        <p className="text-xs text-[#18212B]">{item.type}</p>
-                      </div>
+                      {!item.isRead && (
+                        <span className="w-2 h-2 rounded-full bg-[#5B8DB8] flex-shrink-0 mt-1" />
+                      )}
                     </div>
                   ))}
-                </div>
-
-                {/* Desktop Table View */}
-                <div className="hidden lg:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b-2 border-[#D7DEE6] bg-[#F4F7FA]">
-                        <th className="text-left py-3 px-3 text-xs font-semibold text-[#18212B]">접수번호</th>
-                        <th className="text-left py-3 px-3 text-xs font-semibold text-[#18212B]">거래처</th>
-                        <th className="text-left py-3 px-3 text-xs font-semibold text-[#18212B]">유형</th>
-                        <th className="text-center py-3 px-3 text-xs font-semibold text-[#18212B]">상태</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentService.map((item) => (
-                        <tr key={item.id} className="border-b border-[#D7DEE6] hover:bg-[#F4F7FA] transition-colors">
-                          <td className="py-3 px-3 text-xs font-semibold text-[#163A5F]">{item.id}</td>
-                          <td className="py-3 px-3 text-xs text-[#18212B]">{item.client}</td>
-                          <td className="py-3 px-3 text-xs text-[#5B6773]">{item.type}</td>
-                          <td className="py-3 px-3 text-center">
-                            <StatusBadge status={item.status} />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  {recentNotifications.length === 0 && (
+                    <p className="text-xs text-[#5B6773] text-center py-4">알림이 없습니다</p>
+                  )}
                 </div>
               </div>
               
-              {/* Recent Documents */}
-              <div className="bg-white rounded-lg border border-[#D7DEE6] p-3 shadow-sm">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm lg:text-base font-bold text-[#18212B] flex items-center gap-2">
-                    <Upload className="w-5 h-5 text-[#5B8DB8]" />
-                    최근 문서 업로드
-                  </h3>
-                  <button className="text-xs text-[#5B8DB8] hover:text-[#163A5F] font-semibold" onClick={() => setShowAllDocuments(!showAllDocuments)}>
-                    {showAllDocuments ? '접기' : '전체'} →
-                  </button>
-                </div>
-                
-                {/* Mobile Card View */}
-                <div className="lg:hidden space-y-3">
-                  {recentDocuments.map((item) => (
-                    <div key={item.id} className="border border-[#D7DEE6] rounded-lg p-3 hover:bg-[#F4F7FA] transition-colors">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <p className="text-xs font-bold text-[#163A5F] mb-1">{item.id}</p>
-                          <p className="text-sm font-semibold text-[#18212B]">{item.client}</p>
-                        </div>
-                        <StatusBadge status={item.status} />
-                      </div>
-                      <div className="pt-2 border-t border-[#D7DEE6]">
-                        <p className="text-[10px] text-[#5B6773] mb-0.5">유형</p>
-                        <p className="text-xs text-[#18212B]">{item.type}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Desktop Table View */}
-                <div className="hidden lg:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b-2 border-[#D7DEE6] bg-[#F4F7FA]">
-                        <th className="text-left py-3 px-3 text-xs font-semibold text-[#18212B]">문서번호</th>
-                        <th className="text-left py-3 px-3 text-xs font-semibold text-[#18212B]">유형</th>
-                        <th className="text-left py-3 px-3 text-xs font-semibold text-[#18212B]">거래처</th>
-                        <th className="text-center py-3 px-3 text-xs font-semibold text-[#18212B]">상태</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentDocuments.map((item) => (
-                        <tr key={item.id} className="border-b border-[#D7DEE6] hover:bg-[#F4F7FA] transition-colors">
-                          <td className="py-3 px-3 text-xs font-semibold text-[#163A5F]">{item.id}</td>
-                          <td className="py-3 px-3 text-xs text-[#18212B]">{item.type}</td>
-                          <td className="py-3 px-3 text-xs text-[#5B6773]">{item.client}</td>
-                          <td className="py-3 px-3 text-center">
-                            <StatusBadge status={item.status} />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
             </div>
           </div>
         </div>

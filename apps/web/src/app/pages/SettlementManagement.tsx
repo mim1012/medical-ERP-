@@ -1,431 +1,551 @@
 import { useState } from "react";
-import { useSettlement } from "../../hooks/use-settlement";
+import {
+  useSettlement,
+  useCreateSettlement,
+  useUpdateSettlement,
+  type Settlement,
+  type SettlementType,
+  type SettlementStatus,
+} from "../../hooks/use-settlement";
+import { useClients } from "../../hooks/use-clients";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { SettlementDetailPanel } from "../components/SettlementDetailPanel";
-import { StatusBadge } from "../components/StatusBadge";
-import { 
-  Search, 
-  Filter, 
-  Download,
-  Eye,
+import {
+  Plus,
+  Search,
   DollarSign,
   TrendingUp,
   AlertCircle,
-  CheckCircle2,
   Calendar,
-  CreditCard,
-  FileText
+  Eye,
+  CheckCircle2,
+  X,
 } from "lucide-react";
 
-interface Settlement {
-  settlementNumber: string;
-  clientName: string;
-  period: string;
-  supplyAmount: number;
-  taxAmount: number;
-  totalAmount: number;
-  receivedAmount: number;
-  unpaidAmount: number;
-  status: string;
-  daysOverdue?: number;
+type TypeTab = "ALL" | SettlementType;
+type StatusFilter = "ALL" | SettlementStatus;
+
+const formatAmount = (amount: string) =>
+  `₩${parseFloat(amount).toLocaleString("ko-KR")}`;
+
+const formatDate = (date: string | null) =>
+  date ? new Date(date).toLocaleDateString("ko-KR") : "-";
+
+const TYPE_LABELS: Record<SettlementType, string> = {
+  RECEIVABLE: "매출채권",
+  PAYABLE: "매입채무",
+};
+
+const STATUS_LABELS: Record<SettlementStatus, string> = {
+  PENDING: "미수",
+  PARTIAL: "일부수금",
+  COMPLETED: "완료",
+  OVERDUE: "연체",
+};
+
+const TYPE_BADGE: Record<SettlementType, string> = {
+  RECEIVABLE: "bg-blue-100 text-blue-700",
+  PAYABLE: "bg-red-100 text-red-700",
+};
+
+const STATUS_BADGE: Record<SettlementStatus, string> = {
+  PENDING: "bg-gray-100 text-gray-700",
+  PARTIAL: "bg-yellow-100 text-yellow-700",
+  COMPLETED: "bg-green-100 text-green-700",
+  OVERDUE: "bg-red-100 text-red-700",
+};
+
+interface CreateForm {
+  clientId: string;
+  type: SettlementType;
+  amount: string;
+  dueDate: string;
+  notes: string;
 }
 
+const EMPTY_FORM: CreateForm = {
+  clientId: "",
+  type: "RECEIVABLE",
+  amount: "",
+  dueDate: "",
+  notes: "",
+};
+
 export function SettlementManagement() {
-  const [activeMenu, setActiveMenu] = useState('settlement');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('전체');
-  const [periodFilter, setPeriodFilter] = useState('전체');
+  const [activeMenu, setActiveMenu] = useState("settlement");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [detailPanelSettlements, setDetailPanelSettlements] = useState<Settlement[] | null>(null);
-  const [detailPanelTitle, setDetailPanelTitle] = useState('');
+  const [typeTab, setTypeTab] = useState<TypeTab>("ALL");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState<CreateForm>(EMPTY_FORM);
+  const [selectedSettlement, setSelectedSettlement] =
+    useState<Settlement | null>(null);
 
-  const { data: settlements = [], isLoading, error } = useSettlement({ search: searchTerm });
+  const { data: settlements = [], isLoading } = useSettlement(
+    typeTab !== "ALL" ? { type: typeTab } : undefined
+  );
+  const { data: clients = [] } = useClients();
+  const createSettlement = useCreateSettlement();
+  const updateSettlement = useUpdateSettlement();
 
+  // KPI calculations
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
 
-  const filteredSettlements = settlements.filter(settlement => {
-    const matchesSearch = 
-      settlement.settlementNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      settlement.clientName.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === '전체' || settlement.status === statusFilter;
-    const matchesPeriod = periodFilter === '전체' || settlement.period.includes(periodFilter);
-    
-    return matchesSearch && matchesStatus && matchesPeriod;
+  const totalReceivable = settlements
+    .filter((s) => s.type === "RECEIVABLE")
+    .reduce((sum, s) => sum + parseFloat(s.amount), 0);
+
+  const totalPayable = settlements
+    .filter((s) => s.type === "PAYABLE")
+    .reduce((sum, s) => sum + parseFloat(s.amount), 0);
+
+  const overdueCount = settlements.filter(
+    (s) => s.status === "OVERDUE"
+  ).length;
+
+  const pendingThisMonth = settlements.filter((s) => {
+    if (s.status !== "PENDING" || !s.dueDate) return false;
+    const d = new Date(s.dueDate);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  }).length;
+
+  // Filtered list
+  const filtered = settlements.filter((s) => {
+    const matchesStatus =
+      statusFilter === "ALL" || s.status === statusFilter;
+    const matchesSearch = s.client.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
   });
 
-  const formatCurrency = (amount: number) => {
-    return amount.toLocaleString('ko-KR');
+  const handleCreate = () => {
+    if (!createForm.clientId || !createForm.amount) return;
+    createSettlement.mutate(
+      {
+        clientId: createForm.clientId,
+        type: createForm.type,
+        amount: parseFloat(createForm.amount),
+        dueDate: createForm.dueDate || undefined,
+        notes: createForm.notes || undefined,
+      },
+      {
+        onSuccess: () => {
+          setIsCreateOpen(false);
+          setCreateForm(EMPTY_FORM);
+        },
+      }
+    );
   };
 
-  const getPaymentRate = (received: number, total: number) => {
-    return total > 0 ? Math.round((received / total) * 100) : 0;
+  const handleMarkComplete = (settlement: Settlement) => {
+    updateSettlement.mutate({
+      id: settlement.id,
+      status: "COMPLETED",
+      settledAt: new Date().toISOString(),
+    });
   };
 
-  // Calculate statistics
-  const totalSupply = settlements.reduce((sum, s) => sum + s.supplyAmount, 0);
-  const totalReceived = settlements.reduce((sum, s) => sum + s.receivedAmount, 0);
-  const totalUnpaid = settlements.reduce((sum, s) => sum + s.unpaidAmount, 0);
-  const overdueAmount = settlements.filter(s => s.daysOverdue && s.daysOverdue > 30).reduce((sum, s) => sum + s.unpaidAmount, 0);
-  const collectionRate = totalSupply > 0 ? Math.round((totalReceived / (totalSupply + settlements.reduce((sum, s) => sum + s.taxAmount, 0))) * 100) : 0;
+  const TYPE_TABS: { key: TypeTab; label: string }[] = [
+    { key: "ALL", label: "전체" },
+    { key: "RECEIVABLE", label: "매출채권" },
+    { key: "PAYABLE", label: "매입채무" },
+  ];
 
-  // Get overdue settlements
-  const overdueSettlements = settlements.filter(s => s.unpaidAmount > 0 && s.daysOverdue && s.daysOverdue > 0).sort((a, b) => (b.daysOverdue || 0) - (a.daysOverdue || 0));
+  const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
+    { key: "ALL", label: "전체" },
+    { key: "PENDING", label: "미수" },
+    { key: "PARTIAL", label: "일부수금" },
+    { key: "COMPLETED", label: "완료" },
+    { key: "OVERDUE", label: "연체" },
+  ];
 
   return (
     <div className="min-h-screen bg-[#F4F7FA]">
-      <Sidebar 
-        activeMenu={activeMenu} 
+      <Sidebar
+        activeMenu={activeMenu}
         onMenuClick={setActiveMenu}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
       <Header onMenuClick={() => setIsSidebarOpen(true)} />
-      
+
       <main className="lg:ml-64 pt-16">
         <div className="p-4 lg:p-8">
           {/* Page Title */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-[#18212B] mb-2">정산 관리</h1>
-            <p className="text-[#5B6773]">매출 정산 및 수금 현황 관리</p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-[#18212B] mb-2">
+                정산 관리
+              </h1>
+              <p className="text-[#5B6773]">매출채권 및 매입채무 관리</p>
+            </div>
+            <button
+              onClick={() => setIsCreateOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#163A5F] text-white rounded-md hover:bg-[#0F2942] transition-colors text-sm font-semibold"
+            >
+              <Plus className="w-4 h-4" />
+              정산 등록
+            </button>
           </div>
 
-          {/* Summary Cards */}
+          {/* KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div 
-              onClick={() => {
-                setDetailPanelSettlements(settlements);
-                setDetailPanelTitle('전체 정산');
-              }}
-              className="bg-white rounded-lg border border-[#D7DEE6] p-6 shadow-sm cursor-pointer hover:border-[#163A5F] hover:shadow-md transition-all"
-            >
+            <div className="bg-white rounded-lg border border-[#D7DEE6] p-6 shadow-sm">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-[#5B6773] mb-1">총 공급가액</p>
-                  <p className="text-2xl font-bold text-[#18212B] mb-1">{formatCurrency(totalSupply)}</p>
-                  <p className="text-xs text-[#5B6773]">원 (이번 달)</p>
+                  <p className="text-sm font-semibold text-[#5B6773] mb-1">
+                    총 매출채권
+                  </p>
+                  <p className="text-2xl font-bold text-[#163A5F] mb-1">
+                    ₩{totalReceivable.toLocaleString("ko-KR")}
+                  </p>
+                  <p className="text-xs text-[#5B6773]">전체 RECEIVABLE</p>
                 </div>
                 <DollarSign className="w-10 h-10 text-[#163A5F] opacity-20" />
               </div>
             </div>
 
-            <div 
-              onClick={() => {
-                const paid = settlements.filter(s => s.status === '완납');
-                setDetailPanelSettlements(paid);
-                setDetailPanelTitle('완납 정산');
-              }}
-              className="bg-white rounded-lg border border-[#D7DEE6] p-6 shadow-sm cursor-pointer hover:border-[#2E7D5B] hover:shadow-md transition-all"
-            >
+            <div className="bg-white rounded-lg border border-[#D7DEE6] p-6 shadow-sm">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-[#5B6773] mb-1">수금액</p>
-                  <p className="text-2xl font-bold text-[#2E7D5B] mb-1">{formatCurrency(totalReceived)}</p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <CheckCircle2 className="w-3 h-3 text-[#2E7D5B]" />
-                    <p className="text-xs text-[#2E7D5B]">수금률 {collectionRate}%</p>
-                  </div>
+                  <p className="text-sm font-semibold text-[#5B6773] mb-1">
+                    총 매입채무
+                  </p>
+                  <p className="text-2xl font-bold text-red-600 mb-1">
+                    ₩{totalPayable.toLocaleString("ko-KR")}
+                  </p>
+                  <p className="text-xs text-[#5B6773]">전체 PAYABLE</p>
                 </div>
-                <TrendingUp className="w-10 h-10 text-[#2E7D5B] opacity-20" />
+                <TrendingUp className="w-10 h-10 text-red-600 opacity-20" />
               </div>
             </div>
 
-            <div 
-              onClick={() => {
-                const unpaid = settlements.filter(s => s.unpaidAmount > 0);
-                setDetailPanelSettlements(unpaid);
-                setDetailPanelTitle('미수금 정산');
-              }}
-              className="bg-white rounded-lg border border-[#D7DEE6] p-6 shadow-sm cursor-pointer hover:border-[#C58A2B] hover:shadow-md transition-all"
-            >
+            <div className="bg-white rounded-lg border border-[#D7DEE6] p-6 shadow-sm">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-[#5B6773] mb-1">미수금</p>
-                  <p className="text-2xl font-bold text-[#C58A2B] mb-1">{formatCurrency(totalUnpaid)}</p>
-                  <p className="text-xs text-[#C58A2B]">원 (진행중)</p>
-                </div>
-                <CreditCard className="w-10 h-10 text-[#C58A2B] opacity-20" />
-              </div>
-            </div>
-
-            <div 
-              onClick={() => {
-                const overdue = settlements.filter(s => s.daysOverdue && s.daysOverdue > 30);
-                setDetailPanelSettlements(overdue);
-                setDetailPanelTitle('연체 정산 (30일 이상)');
-              }}
-              className="bg-white rounded-lg border border-[#D7DEE6] p-6 shadow-sm cursor-pointer hover:border-[#B94A48] hover:shadow-md transition-all"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-[#5B6773] mb-1">연체금액</p>
-                  <p className="text-2xl font-bold text-[#B94A48] mb-1">{formatCurrency(overdueAmount)}</p>
+                  <p className="text-sm font-semibold text-[#5B6773] mb-1">
+                    연체 건수
+                  </p>
+                  <p className="text-2xl font-bold text-[#B94A48] mb-1">
+                    {overdueCount}건
+                  </p>
                   <div className="flex items-center gap-1 mt-1">
                     <AlertCircle className="w-3 h-3 text-[#B94A48]" />
-                    <p className="text-xs text-[#B94A48]">30일 이상</p>
+                    <p className="text-xs text-[#B94A48]">OVERDUE</p>
                   </div>
                 </div>
                 <AlertCircle className="w-10 h-10 text-[#B94A48] opacity-20" />
               </div>
             </div>
+
+            <div className="bg-white rounded-lg border border-[#D7DEE6] p-6 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-[#5B6773] mb-1">
+                    이번달 미수
+                  </p>
+                  <p className="text-2xl font-bold text-[#C58A2B] mb-1">
+                    {pendingThisMonth}건
+                  </p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Calendar className="w-3 h-3 text-[#C58A2B]" />
+                    <p className="text-xs text-[#C58A2B]">당월 만기 PENDING</p>
+                  </div>
+                </div>
+                <Calendar className="w-10 h-10 text-[#C58A2B] opacity-20" />
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* Unpaid Balance Panel */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg border border-[#D7DEE6] shadow-sm">
-                <div className="px-6 py-4 border-b border-[#D7DEE6] bg-[#163A5F]">
-                  <h3 className="font-bold text-white flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5" />
-                    미수금 현황
-                  </h3>
-                </div>
-                <div className="p-6 max-h-[500px] overflow-y-auto">
-                  {overdueSettlements.length > 0 ? (
-                    <div className="space-y-3">
-                      {overdueSettlements.map((settlement) => (
-                        <div 
-                          key={settlement.settlementNumber}
-                          className={`p-4 rounded-lg border-l-4 ${
-                            settlement.daysOverdue && settlement.daysOverdue > 30
-                              ? 'border-[#B94A48] bg-[#FCEBE9]'
-                              : 'border-[#C58A2B] bg-[#FFF4E5]'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <p className="text-sm font-bold text-[#18212B]">{settlement.clientName}</p>
-                              <p className="text-xs text-[#5B6773] mt-0.5">{settlement.period}</p>
-                            </div>
-                            {settlement.daysOverdue && settlement.daysOverdue > 0 && (
-                              <span className={`text-xs font-bold px-2 py-1 rounded ${
-                                settlement.daysOverdue > 30
-                                  ? 'bg-[#B94A48] text-white'
-                                  : 'bg-[#C58A2B] text-white'
-                              }`}>
-                                D+{settlement.daysOverdue}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-[#5B6773]">미수금</span>
-                            <span className="text-base font-bold text-[#B94A48]">
-                              {formatCurrency(settlement.unpaidAmount)}원
-                            </span>
-                          </div>
-                          <div className="mt-2 pt-2 border-t border-[#D7DEE6]">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-[#5B6773]">수금률</span>
-                              <span className="font-semibold text-[#18212B]">
-                                {getPaymentRate(settlement.receivedAmount, settlement.totalAmount)}%
-                              </span>
-                            </div>
-                            <div className="mt-1.5 bg-white rounded-full h-1.5 overflow-hidden">
-                              <div 
-                                className="h-full bg-[#C58A2B]"
-                                style={{ width: `${getPaymentRate(settlement.receivedAmount, settlement.totalAmount)}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <CheckCircle2 className="w-12 h-12 text-[#2E7D5B] mx-auto mb-3 opacity-50" />
-                      <p className="text-sm font-semibold text-[#2E7D5B]">미수금이 없습니다</p>
-                      <p className="text-xs text-[#5B6773] mt-1">모든 정산이 완료되었습니다</p>
-                    </div>
-                  )}
-                </div>
+          {/* Main Table */}
+          <div className="bg-white rounded-lg border border-[#D7DEE6] shadow-sm">
+            {/* Type Tabs */}
+            <div className="flex border-b border-[#D7DEE6]">
+              {TYPE_TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setTypeTab(tab.key)}
+                  className={`px-6 py-3 text-sm font-semibold transition-colors ${
+                    typeTab === tab.key
+                      ? "border-b-2 border-[#163A5F] text-[#163A5F]"
+                      : "text-[#5B6773] hover:text-[#18212B]"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Filters */}
+            <div className="px-6 py-4 border-b border-[#D7DEE6] bg-[#F4F7FA] flex flex-col lg:flex-row lg:items-center gap-4">
+              <div className="relative flex-1 max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5B6773]" />
+                <input
+                  type="text"
+                  placeholder="거래처명 검색..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 border border-[#D7DEE6] rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
+                />
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {STATUS_FILTERS.map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setStatusFilter(f.key)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                      statusFilter === f.key
+                        ? "bg-[#163A5F] text-white"
+                        : "bg-white border border-[#D7DEE6] text-[#5B6773] hover:bg-[#E8EEF3]"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Settlement Table */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg border border-[#D7DEE6] shadow-sm">
-                {/* Table Header */}
-                <div className="px-6 py-4 border-b border-[#D7DEE6] bg-[#F4F7FA]">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="relative flex-1 lg:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5B6773]" />
-                        <input
-                          type="text"
-                          placeholder="정산번호, 거래처 검색..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="w-full pl-9 pr-4 py-2 border border-[#D7DEE6] rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Filter className="w-4 h-4 text-[#5B6773]" />
-                        <select
-                          value={periodFilter}
-                          onChange={(e) => setPeriodFilter(e.target.value)}
-                          className="px-3 py-2 border border-[#D7DEE6] rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
-                        >
-                          <option value="전체">전체 기간</option>
-                          <option value="2026년 2월">2026년 2월</option>
-                          <option value="2026년 1월">2026년 1월</option>
-                          <option value="2025년 12월">2025년 12월</option>
-                        </select>
-                        <select
-                          value={statusFilter}
-                          onChange={(e) => setStatusFilter(e.target.value)}
-                          className="px-3 py-2 border border-[#D7DEE6] rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
-                        >
-                          <option value="전체">전체 상태</option>
-                          <option value="완납">완납</option>
-                          <option value="미수">미수</option>
-                          <option value="미납">미납</option>
-                          <option value="연체">연체</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button className="flex items-center gap-2 px-4 py-2 border border-[#D7DEE6] rounded-md text-[#5B6773] hover:bg-white transition-colors text-sm font-semibold">
-                        <Download className="w-4 h-4" />
-                        내보내기
-                      </button>
-                      <button className="flex items-center gap-2 px-4 py-2 bg-[#163A5F] text-white rounded-md hover:bg-[#0F2942] transition-colors text-sm font-semibold">
-                        <FileText className="w-4 h-4" />
-                        정산서 발행
-                      </button>
-                    </div>
-                  </div>
+            {/* Table */}
+            <div className="overflow-x-auto">
+              {isLoading ? (
+                <div className="py-16 text-center text-[#5B6773] text-sm">
+                  불러오는 중...
                 </div>
-
-                {/* Table */}
-                <div className="overflow-x-auto">
-                  {/* Mobile Card View */}
-                  <div className="lg:hidden p-4 space-y-3">
-                    {filteredSettlements.map((settlement) => (
-                      <div 
-                        key={settlement.settlementNumber}
-                        className="border border-[#D7DEE6] rounded-lg p-4 hover:bg-[#F4F7FA] transition-colors"
+              ) : filtered.length === 0 ? (
+                <div className="py-16 text-center text-[#5B6773] text-sm">
+                  정산 내역이 없습니다
+                </div>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b-2 border-[#D7DEE6] bg-[#163A5F]">
+                      <th className="text-left py-3 px-4 text-xs font-bold text-white">
+                        ID
+                      </th>
+                      <th className="text-left py-3 px-4 text-xs font-bold text-white">
+                        거래처명
+                      </th>
+                      <th className="text-center py-3 px-4 text-xs font-bold text-white">
+                        유형
+                      </th>
+                      <th className="text-right py-3 px-4 text-xs font-bold text-white">
+                        금액
+                      </th>
+                      <th className="text-center py-3 px-4 text-xs font-bold text-white">
+                        상태
+                      </th>
+                      <th className="text-center py-3 px-4 text-xs font-bold text-white">
+                        만기일
+                      </th>
+                      <th className="text-center py-3 px-4 text-xs font-bold text-white">
+                        정산일
+                      </th>
+                      <th className="text-center py-3 px-4 text-xs font-bold text-white">
+                        관리
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((s) => (
+                      <tr
+                        key={s.id}
+                        className={`border-b border-[#D7DEE6] hover:bg-[#F4F7FA] transition-colors ${
+                          s.status === "OVERDUE" ? "bg-red-50" : ""
+                        }`}
                       >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <p className="text-xs font-bold text-[#163A5F] mb-1">{settlement.settlementNumber}</p>
-                            <p className="text-sm font-semibold text-[#18212B] mb-1">{settlement.clientName}</p>
-                            <p className="text-xs text-[#5B6773]">{settlement.period}</p>
-                          </div>
-                          <StatusBadge status={settlement.status} />
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-3 mb-3 pt-3 border-t border-[#D7DEE6]">
-                          <div>
-                            <p className="text-[10px] text-[#5B6773] mb-0.5">공급가액</p>
-                            <p className="text-sm font-semibold text-[#18212B]">{formatCurrency(settlement.supplyAmount)}원</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-[#5B6773] mb-0.5">부가세</p>
-                            <p className="text-sm text-[#5B6773]">{formatCurrency(settlement.taxAmount)}원</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-[#5B6773] mb-0.5">총금액</p>
-                            <p className="text-sm font-bold text-[#18212B]">{formatCurrency(settlement.totalAmount)}원</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-[#5B6773] mb-0.5">수금액</p>
-                            <p className="text-sm font-bold text-[#2E7D5B]">{formatCurrency(settlement.receivedAmount)}원</p>
-                          </div>
-                        </div>
-                        
-                        <div className="pt-3 border-t border-[#D7DEE6]">
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="text-xs text-[#5B6773]">미수금</p>
-                            <p className="text-lg font-bold text-[#B94A48]">{formatCurrency(settlement.unpaidAmount)}원</p>
-                          </div>
-                        </div>
-                        
-                        <button className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 bg-[#163A5F] text-white rounded-md hover:bg-[#0F2942] transition-colors text-sm">
-                          <Eye className="w-4 h-4" />
-                          상세보기
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Desktop Table View */}
-                  <table className="w-full hidden lg:table">
-                    <thead>
-                      <tr className="border-b-2 border-[#D7DEE6] bg-[#163A5F]">
-                        <th className="text-left py-3 px-3 text-xs font-bold text-white min-w-[110px]">정산번호</th>
-                        <th className="text-left py-3 px-3 text-xs font-bold text-white min-w-[130px]">거래처명</th>
-                        <th className="text-center py-3 px-3 text-xs font-bold text-white min-w-[90px]">기간</th>
-                        <th className="text-right py-3 px-3 text-xs font-bold text-white min-w-[110px]">공급가액</th>
-                        <th className="text-right py-3 px-3 text-xs font-bold text-white min-w-[90px]">부가세</th>
-                        <th className="text-right py-3 px-3 text-xs font-bold text-white min-w-[110px]">총금액</th>
-                        <th className="text-right py-3 px-3 text-xs font-bold text-white min-w-[110px]">수금액</th>
-                        <th className="text-right py-3 px-3 text-xs font-bold text-white min-w-[110px]">미수금</th>
-                        <th className="text-center py-3 px-3 text-xs font-bold text-white min-w-[90px]">정산상태</th>
-                        <th className="text-center py-3 px-3 text-xs font-bold text-white min-w-[60px]">관리</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredSettlements.map((settlement) => (
-                        <tr key={settlement.settlementNumber} className="border-b border-[#D7DEE6] hover:bg-[#F4F7FA] transition-colors">
-                          <td className="py-3 px-3 text-xs font-semibold text-[#163A5F]">{settlement.settlementNumber}</td>
-                          <td className="py-3 px-3 text-xs font-semibold text-[#18212B]">{settlement.clientName}</td>
-                          <td className="py-3 px-3 text-xs text-center text-[#5B6773]">{settlement.period}</td>
-                          <td className="py-3 px-3 text-xs text-right font-semibold text-[#18212B]">
-                            {formatCurrency(settlement.supplyAmount)}
-                          </td>
-                          <td className="py-3 px-3 text-xs text-right text-[#5B6773]">
-                            {formatCurrency(settlement.taxAmount)}
-                          </td>
-                          <td className="py-3 px-3 text-xs text-right font-bold text-[#18212B]">
-                            {formatCurrency(settlement.totalAmount)}
-                          </td>
-                          <td className="py-3 px-3 text-xs text-right font-bold text-[#2E7D5B]">
-                            {formatCurrency(settlement.receivedAmount)}
-                          </td>
-                          <td className="py-3 px-3 text-xs text-right font-bold text-[#B94A48]">
-                            {formatCurrency(settlement.unpaidAmount)}
-                          </td>
-                          <td className="py-3 px-3 text-center">
-                            <StatusBadge status={settlement.status} />
-                          </td>
-                          <td className="py-3 px-3 text-center">
-                            <button className="p-1 hover:bg-[#E8EEF3] rounded transition-colors" title="상세보기">
+                        <td className="py-3 px-4 text-xs font-mono text-[#5B6773]">
+                          {s.id.slice(0, 8)}
+                        </td>
+                        <td className="py-3 px-4 text-sm font-semibold text-[#18212B]">
+                          {s.client.name}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${TYPE_BADGE[s.type]}`}
+                          >
+                            {TYPE_LABELS[s.type]}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right text-sm font-bold text-[#18212B]">
+                          {formatAmount(s.amount)}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${STATUS_BADGE[s.status]}`}
+                          >
+                            {STATUS_LABELS[s.status]}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-center text-xs text-[#5B6773]">
+                          {formatDate(s.dueDate)}
+                        </td>
+                        <td className="py-3 px-4 text-center text-xs text-[#5B6773]">
+                          {formatDate(s.settledAt)}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => setSelectedSettlement(s)}
+                              className="p-1 hover:bg-[#E8EEF3] rounded transition-colors"
+                              title="상세보기"
+                            >
                               <Eye className="w-4 h-4 text-[#5B6773]" />
                             </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                            {s.status !== "COMPLETED" && (
+                              <button
+                                onClick={() => handleMarkComplete(s)}
+                                className="p-1 hover:bg-green-100 rounded transition-colors"
+                                title="완료 처리"
+                              >
+                                <CheckCircle2 className="w-4 h-4 text-[#2E7D5B]" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
 
-                {/* Footer */}
-                <div className="px-6 py-4 border-t border-[#D7DEE6] flex items-center justify-between bg-[#F4F7FA]">
-                  <p className="text-sm text-[#5B6773]">
-                    전체 {filteredSettlements.length}건
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <button className="px-3 py-1.5 border border-[#D7DEE6] rounded text-sm text-[#5B6773] hover:bg-white transition-colors">
-                      이전
-                    </button>
-                    <button className="px-3 py-1.5 bg-[#163A5F] text-white rounded text-sm">1</button>
-                    <button className="px-3 py-1.5 border border-[#D7DEE6] rounded text-sm text-[#5B6773] hover:bg-white transition-colors">
-                      다음
-                    </button>
-                  </div>
-                </div>
-              </div>
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-[#D7DEE6] bg-[#F4F7FA]">
+              <p className="text-sm text-[#5B6773]">전체 {filtered.length}건</p>
             </div>
           </div>
         </div>
       </main>
 
-      {/* Settlement Detail Panel */}
+      {/* Create Modal */}
+      {isCreateOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => setIsCreateOpen(false)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-md">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-[#D7DEE6] bg-[#163A5F] rounded-t-lg">
+                <h2 className="text-lg font-bold text-white">정산 등록</h2>
+                <button
+                  onClick={() => setIsCreateOpen(false)}
+                  className="p-1 hover:bg-white/10 rounded transition-colors"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-[#18212B] mb-1">
+                    거래처 *
+                  </label>
+                  <select
+                    value={createForm.clientId}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, clientId: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-[#D7DEE6] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
+                  >
+                    <option value="">거래처 선택</option>
+                    {clients.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#18212B] mb-1">
+                    유형 *
+                  </label>
+                  <select
+                    value={createForm.type}
+                    onChange={(e) =>
+                      setCreateForm({
+                        ...createForm,
+                        type: e.target.value as SettlementType,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-[#D7DEE6] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
+                  >
+                    <option value="RECEIVABLE">매출채권 (RECEIVABLE)</option>
+                    <option value="PAYABLE">매입채무 (PAYABLE)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#18212B] mb-1">
+                    금액 *
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={createForm.amount}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, amount: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-[#D7DEE6] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#18212B] mb-1">
+                    만기일
+                  </label>
+                  <input
+                    type="date"
+                    value={createForm.dueDate}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, dueDate: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-[#D7DEE6] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#18212B] mb-1">
+                    메모
+                  </label>
+                  <textarea
+                    placeholder="메모 입력..."
+                    value={createForm.notes}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, notes: e.target.value })
+                    }
+                    rows={3}
+                    className="w-full px-3 py-2 border border-[#D7DEE6] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#5B8DB8] resize-none"
+                  />
+                </div>
+              </div>
+              <div className="px-6 py-4 border-t border-[#D7DEE6] flex justify-end gap-3">
+                <button
+                  onClick={() => setIsCreateOpen(false)}
+                  className="px-4 py-2 border border-[#D7DEE6] rounded-md text-sm text-[#5B6773] hover:bg-[#F4F7FA] transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleCreate}
+                  disabled={createSettlement.isPending}
+                  className="px-4 py-2 bg-[#163A5F] text-white rounded-md text-sm font-semibold hover:bg-[#0F2942] transition-colors disabled:opacity-50"
+                >
+                  {createSettlement.isPending ? "등록 중..." : "등록"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Detail Panel */}
       <SettlementDetailPanel
-        isOpen={!!detailPanelSettlements}
-        settlements={detailPanelSettlements}
-        title={detailPanelTitle}
-        onClose={() => setDetailPanelSettlements(null)}
+        isOpen={!!selectedSettlement}
+        settlement={selectedSettlement}
+        onClose={() => setSelectedSettlement(null)}
+        onMarkComplete={handleMarkComplete}
       />
     </div>
   );

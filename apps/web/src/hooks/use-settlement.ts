@@ -1,19 +1,34 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../lib/api-client'
+import type { Client } from './use-clients'
+
+export type SettlementType = 'RECEIVABLE' | 'PAYABLE'
+export type SettlementStatus = 'PENDING' | 'PARTIAL' | 'COMPLETED' | 'OVERDUE'
 
 export interface Settlement {
-  id?: string
-  code: string
-  client: string
-  period: string
-  salesAmount: number
-  collectedAmount: number
-  unpaidAmount: number
-  status: string
-  dueDate: string
+  id: string
+  clientId: string
+  client: Client
+  type: SettlementType
+  amount: string  // Decimal serialized as string
+  status: SettlementStatus
+  dueDate: string | null
+  settledAt: string | null
+  notes: string | null
+  organizationId: string
+  createdAt: string
+  updatedAt: string
 }
 
-export function useSettlement(params?: { search?: string; status?: string }) {
+export interface CreateSettlementDto {
+  clientId: string
+  type: SettlementType
+  amount: number
+  dueDate?: string
+  notes?: string
+}
+
+export function useSettlement(params?: { clientId?: string; status?: SettlementStatus; type?: SettlementType }) {
   return useQuery({
     queryKey: ['settlement', params],
     queryFn: async () => {
@@ -26,7 +41,7 @@ export function useSettlement(params?: { search?: string; status?: string }) {
 export function useCreateSettlement() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (dto: Omit<Settlement, 'id'>) => {
+    mutationFn: async (dto: CreateSettlementDto) => {
       const { data } = await apiClient.post('/settlement', dto)
       return data.data as Settlement
     },
@@ -37,7 +52,16 @@ export function useCreateSettlement() {
 export function useUpdateSettlement() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, ...dto }: Partial<Settlement> & { id: string }) => {
+    mutationFn: async ({
+      id,
+      ...dto
+    }: {
+      id: string
+      status?: SettlementStatus
+      settledAt?: string
+      dueDate?: string
+      notes?: string
+    }) => {
       const { data } = await apiClient.patch(`/settlement/${id}`, dto)
       return data.data as Settlement
     },

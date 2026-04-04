@@ -1,457 +1,266 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLogs } from "../../hooks/use-log";
+import type { AuditLog } from "../../hooks/use-log";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { LogDetailPanel } from "../components/LogDetailPanel";
-import { 
-  Search, 
-  Filter,
+import {
+  Search,
   Eye,
-  Download,
   FileText,
-  Edit,
-  Trash2,
-  CheckCircle2,
-  XCircle,
-  LogIn,
-  LogOut,
-  Upload,
-  Key,
-  ToggleRight,
-  Shield,
   Calendar,
   Users,
-  Settings
+  Database,
 } from "lucide-react";
-
-interface LogEntry {
-  timestamp: string;
-  userName: string;
-  department: string;
-  menu: string;
-  action: string;
-  target: string;
-  targetNumber: string;
-  summary: string;
-  ip: string;
-  importance: string;
-  beforeValue?: string;
-  afterValue?: string;
-  reason?: string;
-  device?: string;
-  note?: string;
-}
 
 export function LogHistory() {
   const [activeMenu, setActiveMenu] = useState('logs');
-  const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [menuFilter, setMenuFilter] = useState('전체');
-  const [actionFilter, setActionFilter] = useState('전체');
-  const [userFilter, setUserFilter] = useState('전체');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [dateFilter, setDateFilter] = useState('오늘');
-  const [importanceFilter, setImportanceFilter] = useState('전체');
-  const [detailPanelLogs, setDetailPanelLogs] = useState<LogEntry[] | null>(null);
-  const [detailPanelTitle, setDetailPanelTitle] = useState('');
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [resourceFilter, setResourceFilter] = useState('전체');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
-  const { data: logs = [], isLoading, error } = useLogs({ search: searchTerm });
-
-
-  const filteredLogs = logs.filter(log => {
-    const matchesSearch = 
-      log.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.target.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.targetNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.summary.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesMenu = menuFilter === '전체' || log.menu === menuFilter;
-    const matchesAction = actionFilter === '전체' || log.action === actionFilter;
-    const matchesUser = userFilter === '전체' || log.userName === userFilter;
-    const matchesImportance = importanceFilter === '전체' || log.importance === importanceFilter;
-    
-    // Date filter logic (simplified)
-    let matchesDate = true;
-    if (dateFilter === '오늘') {
-      matchesDate = log.timestamp.startsWith('2026-03-02');
-    } else if (dateFilter === '어제') {
-      matchesDate = log.timestamp.startsWith('2026-03-01');
-    }
-    
-    return matchesSearch && matchesMenu && matchesAction && matchesUser && matchesImportance && matchesDate;
+  const { data: logs = [], isLoading } = useLogs({
+    from: dateFrom || undefined,
+    to: dateTo || undefined,
   });
 
-  const getActionIcon = (action: string) => {
-    const icons: { [key: string]: JSX.Element } = {
-      '등록': <FileText className="w-3 h-3" />,
-      '수정': <Edit className="w-3 h-3" />,
-      '삭제': <Trash2 className="w-3 h-3" />,
-      '승인': <CheckCircle2 className="w-3 h-3" />,
-      '반려': <XCircle className="w-3 h-3" />,
-      '로그인': <LogIn className="w-3 h-3" />,
-      '로그아웃': <LogOut className="w-3 h-3" />,
-      '다운로드': <Download className="w-3 h-3" />,
-      '업로드': <Upload className="w-3 h-3" />,
-      '권한변경': <Key className="w-3 h-3" />,
-      '상태변경': <ToggleRight className="w-3 h-3" />,
-    };
-    return icons[action] || <FileText className="w-3 h-3" />;
-  };
+  const uniqueResources = useMemo(() => {
+    const set = new Set(logs.map(l => l.resource));
+    return Array.from(set).sort();
+  }, [logs]);
 
-  const getActionColor = (action: string) => {
-    const colors: { [key: string]: string } = {
-      '등록': 'bg-[#E6F4EA] text-[#2E7D5B]',
-      '수정': 'bg-[#E8EEF3] text-[#5B8DB8]',
-      '삭제': 'bg-[#FCEBE9] text-[#B94A48]',
-      '승인': 'bg-[#E6F4EA] text-[#2E7D5B]',
-      '반려': 'bg-[#FFF4E5] text-[#C58A2B]',
-      '로그인': 'bg-[#E8EEF3] text-[#5B8DB8]',
-      '로그아웃': 'bg-[#F4F7FA] text-[#5B6773]',
-      '다운로드': 'bg-[#E8EEF3] text-[#5B8DB8]',
-      '업로드': 'bg-[#E8EEF3] text-[#5B8DB8]',
-      '권한변경': 'bg-[#FCEBE9] text-[#B94A48]',
-      '상태변경': 'bg-[#FFF4E5] text-[#C58A2B]',
-    };
-    return colors[action] || 'bg-[#F4F7FA] text-[#5B6773]';
-  };
+  const today = new Date().toISOString().slice(0, 10);
 
-  const getImportanceBadge = (importance: string) => {
-    const badges: { [key: string]: JSX.Element } = {
-      '긴급': (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold bg-[#FCEBE9] text-[#B94A48]">
-          <Shield className="w-3 h-3" />
-          긴급
-        </span>
-      ),
-      '높음': (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold bg-[#FFF4E5] text-[#C58A2B]">
-          높음
-        </span>
-      ),
-      '보통': (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold bg-[#E8EEF3] text-[#5B8DB8]">
-          보통
-        </span>
-      ),
-      '낮음': (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold bg-[#F4F7FA] text-[#5B6773]">
-          낮음
-        </span>
-      ),
-    };
-    return badges[importance] || badges['보통'];
-  };
+  const filtered = useMemo(() => {
+    const search = searchTerm.toLowerCase();
+    return logs.filter(l => {
+      const matchesSearch =
+        l.action.toLowerCase().includes(search) ||
+        l.resource.toLowerCase().includes(search);
+      const matchesResource = resourceFilter === '전체' || l.resource === resourceFilter;
+      return matchesSearch && matchesResource;
+    });
+  }, [logs, searchTerm, resourceFilter]);
 
-  // Calculate statistics
-  const todayChanges = logs.filter(l => l.timestamp.startsWith('2026-03-02')).length;
-  const deleteActions = logs.filter(l => l.action === '삭제').length;
-  const permissionChanges = logs.filter(l => l.action === '권한변경').length;
-  const loginFailures = logs.filter(l => l.action === '로그인' && l.summary.includes('실패')).length;
-  const inventoryAdjustments = logs.filter(l => l.menu === '재고 관리' && l.action === '수정').length;
-  const settlementEdits = logs.filter(l => l.menu === '정산 관리' && l.action === '수정').length;
+  const totalLogs = logs.length;
+  const todayLogs = logs.filter(l => l.createdAt.startsWith(today)).length;
+  const uniqueResourceCount = uniqueResources.length;
+  const uniqueUserCount = useMemo(() => {
+    return new Set(logs.map(l => l.userId).filter(Boolean)).size;
+  }, [logs]);
 
   return (
     <div className="min-h-screen bg-[#F4F7FA]">
-      <Sidebar 
-        activeMenu={activeMenu} 
+      <Sidebar
+        activeMenu={activeMenu}
         onMenuClick={setActiveMenu}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
       <Header onMenuClick={() => setIsSidebarOpen(true)} />
-      
+
       <main className="lg:ml-64 pt-16">
         <div className="p-4 lg:p-8">
           {/* Page Title */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-[#18212B] mb-2">로그/이력 관리</h1>
+            <h1 className="text-3xl font-bold text-[#18212B] mb-2">로그 이력</h1>
             <p className="text-[#5B6773]">시스템 작업 이력 추적 및 감사</p>
           </div>
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-            <div className="bg-white rounded-lg border border-[#D7DEE6] p-4 shadow-sm">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <p className="text-xs font-semibold text-[#5B6773] mb-1">오늘 변경 건수</p>
-                  <p className="text-2xl font-bold text-[#5B8DB8]">{todayChanges}</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white rounded-lg border border-[#D7DEE6] p-5 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-[#5B6773] mb-1">총 로그</p>
+                  <p className="text-3xl font-bold text-[#18212B]">{totalLogs}</p>
+                  <p className="text-xs text-[#5B6773] mt-1">건</p>
                 </div>
-                <Calendar className="w-7 h-7 text-[#5B8DB8] opacity-20" />
+                <FileText className="w-9 h-9 text-[#163A5F] opacity-20" />
               </div>
-              <p className="text-xs text-[#5B6773]">건</p>
             </div>
-
-            <div className="bg-white rounded-lg border border-[#D7DEE6] p-4 shadow-sm">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <p className="text-xs font-semibold text-[#5B6773] mb-1">삭제 작업 건수</p>
-                  <p className="text-2xl font-bold text-[#B94A48]">{deleteActions}</p>
+            <div className="bg-white rounded-lg border border-[#D7DEE6] p-5 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-[#5B6773] mb-1">오늘 로그</p>
+                  <p className="text-3xl font-bold text-[#5B8DB8]">{todayLogs}</p>
+                  <p className="text-xs text-[#5B6773] mt-1">건</p>
                 </div>
-                <Trash2 className="w-7 h-7 text-[#B94A48] opacity-20" />
+                <Calendar className="w-9 h-9 text-[#5B8DB8] opacity-20" />
               </div>
-              <p className="text-xs text-[#B94A48]">주의 필요</p>
             </div>
-
-            <div className="bg-white rounded-lg border border-[#D7DEE6] p-4 shadow-sm">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <p className="text-xs font-semibold text-[#5B6773] mb-1">권한 변경 건수</p>
-                  <p className="text-2xl font-bold text-[#C58A2B]">{permissionChanges}</p>
+            <div className="bg-white rounded-lg border border-[#D7DEE6] p-5 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-[#5B6773] mb-1">리소스 종류</p>
+                  <p className="text-3xl font-bold text-[#2E7D5B]">{uniqueResourceCount}</p>
+                  <p className="text-xs text-[#5B6773] mt-1">종</p>
                 </div>
-                <Key className="w-7 h-7 text-[#C58A2B] opacity-20" />
+                <Database className="w-9 h-9 text-[#2E7D5B] opacity-20" />
               </div>
-              <p className="text-xs text-[#C58A2B]">보안 감사</p>
             </div>
-
-            <div className="bg-white rounded-lg border border-[#D7DEE6] p-4 shadow-sm">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <p className="text-xs font-semibold text-[#5B6773] mb-1">로그인 실패 건수</p>
-                  <p className="text-2xl font-bold text-[#B94A48]">{loginFailures}</p>
+            <div className="bg-white rounded-lg border border-[#D7DEE6] p-5 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-[#5B6773] mb-1">활동 사용자</p>
+                  <p className="text-3xl font-bold text-[#C58A2B]">{uniqueUserCount}</p>
+                  <p className="text-xs text-[#5B6773] mt-1">명</p>
                 </div>
-                <Shield className="w-7 h-7 text-[#B94A48] opacity-20" />
+                <Users className="w-9 h-9 text-[#C58A2B] opacity-20" />
               </div>
-              <p className="text-xs text-[#B94A48]">보안 위협</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-[#D7DEE6] p-4 shadow-sm">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <p className="text-xs font-semibold text-[#5B6773] mb-1">재고 조정 건수</p>
-                  <p className="text-2xl font-bold text-[#5B8DB8]">{inventoryAdjustments}</p>
-                </div>
-                <Settings className="w-7 h-7 text-[#5B8DB8] opacity-20" />
-              </div>
-              <p className="text-xs text-[#5B6773]">건</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-[#D7DEE6] p-4 shadow-sm">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <p className="text-xs font-semibold text-[#5B6773] mb-1">정산 수정 건수</p>
-                  <p className="text-2xl font-bold text-[#7B4397]">{settlementEdits}</p>
-                </div>
-                <Edit className="w-7 h-7 text-[#7B4397] opacity-20" />
-              </div>
-              <p className="text-xs text-[#7B4397]">재무 변경</p>
             </div>
           </div>
 
           {/* Table Section */}
           <div className="bg-white rounded-lg border border-[#D7DEE6] shadow-sm">
-            {/* Table Header */}
+            {/* Toolbar */}
             <div className="px-6 py-4 border-b border-[#D7DEE6]">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex flex-col gap-3">
+                {/* Row 1: search + resource filter */}
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="relative flex-1 lg:w-64">
+                  <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5B6773]" />
                     <input
                       type="text"
-                      placeholder="사용자, 대상, 번호 검색..."
+                      placeholder="action, resource 검색..."
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2 border border-[#D7DEE6] rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
+                      onChange={e => setSearchTerm(e.target.value)}
+                      className="pl-9 pr-4 py-2 border border-[#D7DEE6] rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#5B8DB8] w-56"
                     />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-[#5B6773]" />
-                    <select
-                      value={dateFilter}
-                      onChange={(e) => setDateFilter(e.target.value)}
-                      className="px-3 py-2 border border-[#D7DEE6] rounded-md bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
-                    >
-                      <option value="오늘">오늘</option>
-                      <option value="어제">어제</option>
-                      <option value="7일">최근 7일</option>
-                      <option value="30일">최근 30일</option>
-                    </select>
-                    <select
-                      value={menuFilter}
-                      onChange={(e) => setMenuFilter(e.target.value)}
-                      className="px-3 py-2 border border-[#D7DEE6] rounded-md bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
-                    >
-                      <option value="전체">전체 메뉴</option>
-                      <option value="거래처 관리">거래처 관리</option>
-                      <option value="품목 관리">품목 관리</option>
-                      <option value="재고 관리">재고 관리</option>
-                      <option value="출고 관리">출고 관리</option>
-                      <option value="정산 관리">정산 관리</option>
-                      <option value="세금계산서">세금계산서</option>
-                      <option value="사용자 관리">사용자 관리</option>
-                      <option value="문서 관리">문서 관리</option>
-                      <option value="설치/A/S">설치/A/S</option>
-                    </select>
-                    <select
-                      value={actionFilter}
-                      onChange={(e) => setActionFilter(e.target.value)}
-                      className="px-3 py-2 border border-[#D7DEE6] rounded-md bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
-                    >
-                      <option value="전체">전체 작업</option>
-                      <option value="등록">등록</option>
-                      <option value="수정">수정</option>
-                      <option value="삭제">삭제</option>
-                      <option value="승인">승인</option>
-                      <option value="반려">반려</option>
-                      <option value="로그인">로그인</option>
-                      <option value="다운로드">다운로드</option>
-                      <option value="업로드">업로드</option>
-                      <option value="권한변경">권한변경</option>
-                      <option value="상태변경">상태변경</option>
-                    </select>
-                    <select
-                      value={userFilter}
-                      onChange={(e) => setUserFilter(e.target.value)}
-                      className="px-3 py-2 border border-[#D7DEE6] rounded-md bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
-                    >
-                      <option value="전체">전체 사용자</option>
-                      <option value="박운영">박운영</option>
-                      <option value="강정산">강정산</option>
-                      <option value="이영업">이영업</option>
-                      <option value="최물류">최물류</option>
-                      <option value="김대표">김대표</option>
-                      <option value="정서비스">정서비스</option>
-                      <option value="unknown">unknown</option>
-                    </select>
-                    <select
-                      value={importanceFilter}
-                      onChange={(e) => setImportanceFilter(e.target.value)}
-                      className="px-3 py-2 border border-[#D7DEE6] rounded-md bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
-                    >
-                      <option value="전체">전체 중요도</option>
-                      <option value="긴급">긴급</option>
-                      <option value="높음">높음</option>
-                      <option value="보통">보통</option>
-                      <option value="낮음">낮음</option>
-                    </select>
-                  </div>
+
+                  <select
+                    value={resourceFilter}
+                    onChange={e => setResourceFilter(e.target.value)}
+                    className="px-3 py-2 border border-[#D7DEE6] rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
+                  >
+                    <option value="전체">전체 리소스</option>
+                    {uniqueResources.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 border border-[#D7DEE6] rounded-md text-[#5B6773] hover:bg-[#F4F7FA] transition-colors text-sm font-semibold">
-                  <Download className="w-4 h-4" />
-                  로그 내보내기
-                </button>
+
+                {/* Row 2: date range */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-[#5B6773]">기간</span>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={e => setDateFrom(e.target.value)}
+                    className="px-3 py-2 border border-[#D7DEE6] rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
+                  />
+                  <span className="text-sm text-[#5B6773]">~</span>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={e => setDateTo(e.target.value)}
+                    className="px-3 py-2 border border-[#D7DEE6] rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#5B8DB8]"
+                  />
+                  {(dateFrom || dateTo) && (
+                    <button
+                      onClick={() => { setDateFrom(''); setDateTo(''); }}
+                      className="text-xs text-[#5B6773] hover:text-[#B94A48] underline"
+                    >
+                      초기화
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Table */}
             <div className="overflow-x-auto">
-              {/* Mobile Card View */}
-              <div className="lg:hidden p-4 space-y-3">
-                {filteredLogs.map((log, index) => (
-                  <div 
-                    key={index}
-                    className="border border-[#D7DEE6] rounded-lg p-4 hover:bg-[#F4F7FA] transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${getActionColor(log.action)}`}>
-                            {getActionIcon(log.action)}
-                            {log.action}
-                          </span>
-                          {getImportanceBadge(log.importance)}
+              {isLoading ? (
+                <div className="p-12 text-center text-[#5B6773]">로딩 중...</div>
+              ) : filtered.length === 0 ? (
+                <div className="p-12 text-center text-[#5B6773]">로그가 없습니다.</div>
+              ) : (
+                <>
+                  {/* Mobile Card View */}
+                  <div className="lg:hidden p-4 space-y-3">
+                    {filtered.map(log => (
+                      <div
+                        key={log.id}
+                        className="border border-[#D7DEE6] rounded-lg p-4 hover:bg-[#F4F7FA] transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <p className="text-sm font-bold text-[#18212B]">{log.action}</p>
+                            <p className="text-xs text-[#5B6773]">{log.resource}</p>
+                          </div>
+                          <p className="text-xs font-mono text-[#5B6773]">{log.createdAt.slice(0, 10)}</p>
                         </div>
-                        <p className="text-sm font-semibold text-[#18212B] mb-1">{log.userName}</p>
-                        <p className="text-xs text-[#5B6773]">{log.department} · {log.menu}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-3 mb-3 pt-3 border-t border-[#D7DEE6]">
-                      <div>
-                        <p className="text-[10px] text-[#5B6773] mb-0.5">대상명</p>
-                        <p className="text-xs text-[#18212B]">{log.target}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-[#5B6773] mb-0.5">대상번호</p>
-                        <p className="text-xs font-semibold text-[#5B8DB8]">{log.targetNumber}</p>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="text-[10px] text-[#5B6773] mb-0.5">변경요약</p>
-                        <p className="text-xs text-[#18212B]">{log.summary}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-[#5B6773] mb-0.5">일시</p>
-                        <p className="text-xs font-mono text-[#5B6773]">{log.timestamp}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-[#5B6773] mb-0.5">IP</p>
-                        <p className="text-xs font-mono text-[#5B6773]">{log.ip}</p>
-                      </div>
-                    </div>
-                    
-                    <button 
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#163A5F] text-white rounded-md hover:bg-[#0F2942] transition-colors text-sm"
-                      onClick={() => setSelectedLog(log)}
-                    >
-                      <Eye className="w-4 h-4" />
-                      상세보기
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* Desktop Table View */}
-              <table className="w-full hidden lg:table">
-                <thead>
-                  <tr className="border-b-2 border-[#D7DEE6] bg-[#163A5F]">
-                    <th className="text-left py-3 px-3 text-xs font-bold text-white min-w-[140px]">일시</th>
-                    <th className="text-left py-3 px-3 text-xs font-bold text-white min-w-[80px]">사용자명</th>
-                    <th className="text-left py-3 px-3 text-xs font-bold text-white min-w-[80px]">부서</th>
-                    <th className="text-left py-3 px-3 text-xs font-bold text-white min-w-[100px]">메뉴</th>
-                    <th className="text-center py-3 px-3 text-xs font-bold text-white min-w-[90px]">작업유형</th>
-                    <th className="text-left py-3 px-3 text-xs font-bold text-white min-w-[120px]">대상명</th>
-                    <th className="text-left py-3 px-3 text-xs font-bold text-white min-w-[120px]">대상번호</th>
-                    <th className="text-left py-3 px-3 text-xs font-bold text-white min-w-[200px]">변경요약</th>
-                    <th className="text-left py-3 px-3 text-xs font-bold text-white min-w-[110px]">IP</th>
-                    <th className="text-center py-3 px-3 text-xs font-bold text-white min-w-[70px]">중요도</th>
-                    <th className="text-center py-3 px-3 text-xs font-bold text-white min-w-[60px]">상세</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredLogs.map((log, index) => (
-                    <tr key={index} className="border-b border-[#D7DEE6] hover:bg-[#F4F7FA] transition-colors">
-                      <td className="py-3 px-3 text-xs text-[#5B6773] font-mono">{log.timestamp}</td>
-                      <td className="py-3 px-3 text-xs font-semibold text-[#18212B]">{log.userName}</td>
-                      <td className="py-3 px-3 text-xs text-[#5B6773]">{log.department}</td>
-                      <td className="py-3 px-3 text-xs text-[#5B6773]">{log.menu}</td>
-                      <td className="py-3 px-3 text-center">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold ${getActionColor(log.action)}`}>
-                          {getActionIcon(log.action)}
-                          {log.action}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-xs text-[#18212B]">{log.target}</td>
-                      <td className="py-3 px-3 text-xs text-[#5B8DB8] font-semibold">{log.targetNumber}</td>
-                      <td className="py-3 px-3 text-xs text-[#5B6773]">{log.summary}</td>
-                      <td className="py-3 px-3 text-xs text-[#5B6773] font-mono">{log.ip}</td>
-                      <td className="py-3 px-3 text-center">{getImportanceBadge(log.importance)}</td>
-                      <td className="py-3 px-3 text-center">
-                        <button 
-                          className="p-1 hover:bg-[#E8EEF3] rounded transition-colors"
+                        <div className="grid grid-cols-2 gap-2 mb-3 text-xs text-[#5B6773]">
+                          <div>
+                            <span className="text-[10px] uppercase">Resource ID</span>
+                            <p className="font-mono truncate">{log.resourceId ? log.resourceId.slice(0, 12) + '...' : '-'}</p>
+                          </div>
+                          <div>
+                            <span className="text-[10px] uppercase">User ID</span>
+                            <p className="font-mono truncate">{log.userId ? log.userId.slice(0, 12) + '...' : '-'}</p>
+                          </div>
+                        </div>
+                        <button
                           onClick={() => setSelectedLog(log)}
+                          className="w-full flex items-center justify-center gap-1 px-3 py-2 bg-[#163A5F] text-white rounded-md text-sm hover:bg-[#0F2942] transition-colors"
                         >
-                          <Eye className="w-4 h-4 text-[#5B8DB8]" />
+                          <Eye className="w-4 h-4" />
+                          상세보기
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop Table */}
+                  <table className="w-full hidden lg:table">
+                    <thead>
+                      <tr className="border-b-2 border-[#D7DEE6] bg-[#163A5F]">
+                        <th className="text-left py-3 px-4 text-sm font-bold text-white min-w-[160px]">일시</th>
+                        <th className="text-left py-3 px-4 text-sm font-bold text-white min-w-[130px]">액션</th>
+                        <th className="text-left py-3 px-4 text-sm font-bold text-white min-w-[130px]">리소스</th>
+                        <th className="text-left py-3 px-4 text-sm font-bold text-white min-w-[150px]">리소스 ID</th>
+                        <th className="text-left py-3 px-4 text-sm font-bold text-white min-w-[150px]">사용자 ID</th>
+                        <th className="text-center py-3 px-4 text-sm font-bold text-white min-w-[70px]">상세</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map(log => (
+                        <tr key={log.id} className="border-b border-[#D7DEE6] hover:bg-[#F4F7FA] transition-colors">
+                          <td className="py-3 px-4 text-xs text-[#5B6773] font-mono">
+                            {log.createdAt.replace('T', ' ').slice(0, 19)}
+                          </td>
+                          <td className="py-3 px-4 text-sm font-semibold text-[#18212B]">{log.action}</td>
+                          <td className="py-3 px-4 text-sm text-[#5B6773]">{log.resource}</td>
+                          <td className="py-3 px-4 text-xs text-[#5B6773] font-mono">
+                            {log.resourceId ? log.resourceId.slice(0, 16) + (log.resourceId.length > 16 ? '...' : '') : '-'}
+                          </td>
+                          <td className="py-3 px-4 text-xs text-[#5B6773] font-mono">
+                            {log.userId ? log.userId.slice(0, 16) + (log.userId.length > 16 ? '...' : '') : '-'}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <button
+                              onClick={() => setSelectedLog(log)}
+                              className="p-1.5 hover:bg-[#E8EEF3] rounded transition-colors"
+                              title="상세보기"
+                            >
+                              <Eye className="w-4 h-4 text-[#5B8DB8]" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
             </div>
 
-            {/* Pagination */}
-            <div className="px-6 py-4 border-t border-[#D7DEE6] flex items-center justify-between bg-[#F4F7FA]">
-              <p className="text-sm text-[#5B6773]">
-                전체 {filteredLogs.length}건 | 보안 감사 로그 추적 시스템
-              </p>
-              <div className="flex items-center gap-2">
-                <button className="px-3 py-1.5 border border-[#D7DEE6] rounded text-sm text-[#5B6773] hover:bg-white transition-colors">
-                  이전
-                </button>
-                <button className="px-3 py-1.5 bg-[#163A5F] text-white rounded text-sm">1</button>
-                <button className="px-3 py-1.5 border border-[#D7DEE6] rounded text-sm text-[#5B6773] hover:bg-white transition-colors">
-                  다음
-                </button>
-              </div>
+            {/* Footer */}
+            <div className="px-6 py-3 border-t border-[#D7DEE6] bg-[#F4F7FA]">
+              <p className="text-sm text-[#5B6773]">전체 {filtered.length}건</p>
             </div>
           </div>
         </div>

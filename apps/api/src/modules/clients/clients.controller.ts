@@ -5,12 +5,7 @@ import { CreateClientDto } from './dto/create-client.dto'
 import { UpdateClientDto } from './dto/update-client.dto'
 import { QueryClientDto } from './dto/query-client.dto'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
-
-interface AuthUser {
-  id: string
-  email: string
-  organizationId: string
-}
+import { AuthUser } from '../../common/types/auth-user.type'
 
 @ApiTags('clients')
 @ApiBearerAuth()

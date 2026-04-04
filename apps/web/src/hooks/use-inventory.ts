@@ -1,21 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../lib/api-client'
+import type { Product } from './use-products'
 
 export interface InventoryItem {
-  id?: string
-  productCode: string
-  productName: string
-  category: string
-  lotNumber?: string
-  serialNumber?: string
-  expiryDate?: string
+  id: string
+  productId: string
+  product: Product
   quantity: number
-  location: string
-  status: string
-  lastUpdated: string
+  safetyStock: number
+  lotNumber: string | null
+  organizationId: string
+  updatedAt: string
 }
 
-export function useInventory(params?: { search?: string; category?: string }) {
+export interface AdjustInventoryDto {
+  quantity: number
+}
+
+export function useInventory(params?: { search?: string }) {
   return useQuery({
     queryKey: ['inventory', params],
     queryFn: async () => {
@@ -28,8 +30,19 @@ export function useInventory(params?: { search?: string; category?: string }) {
 export function useUpdateInventory() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, ...dto }: Partial<InventoryItem> & { id: string }) => {
+    mutationFn: async ({ id, ...dto }: { id: string; safetyStock?: number; lotNumber?: string }) => {
       const { data } = await apiClient.patch(`/inventory/${id}`, dto)
+      return data.data as InventoryItem
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory'] }),
+  })
+}
+
+export function useAdjustInventory() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...dto }: AdjustInventoryDto & { id: string }) => {
+      const { data } = await apiClient.post(`/inventory/${id}/adjust`, dto)
       return data.data as InventoryItem
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory'] }),

@@ -1,34 +1,35 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../lib/api-client'
 
+export type ClientType = 'HOSPITAL' | 'CLINIC' | 'PHARMACY' | 'OTHER'
+
 export interface Client {
-  id?: string
-  code: string
+  id: string
   name: string
-  type: string
-  representative: string
-  contactPerson: string
-  phone: string
-  region: string
-  unpaidBalance: number
-  lastTransaction: string
-  status: string
-  registrationDate: string
-  contractStart?: string
-  contractEnd?: string
-  beds?: number
-  departments?: string[]
-  annualRevenue?: number
-  documentStatus?: {
-    businessLicense: boolean
-    bankAccount: boolean
-    medicalLicense: boolean
-    contract: boolean
-  }
-  grade?: string
+  type: ClientType
+  bizNumber: string | null
+  address: string | null
+  phone: string | null
+  email: string | null
+  manager: string | null
+  notes: string | null
+  organizationId: string
+  createdAt: string
+  updatedAt: string
 }
 
-export function useClients(params?: { search?: string; type?: string }) {
+export interface CreateClientDto {
+  name: string
+  type: ClientType
+  bizNumber?: string
+  address?: string
+  phone?: string
+  email?: string
+  manager?: string
+  notes?: string
+}
+
+export function useClients(params?: { name?: string; type?: ClientType; page?: number; limit?: number }) {
   return useQuery({
     queryKey: ['clients', params],
     queryFn: async () => {
@@ -41,7 +42,7 @@ export function useClients(params?: { search?: string; type?: string }) {
 export function useCreateClient() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (dto: Omit<Client, 'id'>) => {
+    mutationFn: async (dto: CreateClientDto) => {
       const { data } = await apiClient.post('/clients', dto)
       return data.data as Client
     },
@@ -52,7 +53,7 @@ export function useCreateClient() {
 export function useUpdateClient() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, ...dto }: Partial<Client> & { id: string }) => {
+    mutationFn: async ({ id, ...dto }: Partial<CreateClientDto> & { id: string }) => {
       const { data } = await apiClient.patch(`/clients/${id}`, dto)
       return data.data as Client
     },

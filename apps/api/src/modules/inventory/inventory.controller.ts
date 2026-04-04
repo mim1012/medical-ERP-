@@ -1,14 +1,9 @@
-import { Controller, Get, Patch, Param, Body } from '@nestjs/common'
+import { Controller, Get, Patch, Post, Param, Body } from '@nestjs/common'
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger'
 import { InventoryService } from './inventory.service'
 import { UpdateInventoryDto } from './dto/update-inventory.dto'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
-
-interface AuthUser {
-  id: string
-  email: string
-  organizationId: string
-}
+import { AuthUser } from '../../common/types/auth-user.type'
 
 @ApiTags('inventory')
 @ApiBearerAuth()
@@ -29,5 +24,14 @@ export class InventoryController {
   @Patch(':id')
   update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateInventoryDto) {
     return this.inventoryService.update(id, user.organizationId, dto)
+  }
+
+  @Post(':id/adjust')
+  adjust(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: { quantity: number },
+  ) {
+    return this.inventoryService.adjust(id, user.organizationId, dto)
   }
 }
